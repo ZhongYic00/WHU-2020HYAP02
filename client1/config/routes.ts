@@ -60,4 +60,8 @@ export default [
     layout: false,
     component: './404',
   },
+  {
+    path: '/demo',
+    component: './Demo'
+  }
 ];
