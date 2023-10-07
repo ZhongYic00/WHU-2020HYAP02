@@ -19,7 +19,7 @@ GraphQL技术较RESTful省去较多前后端磨合接口的工作，本项目采
 
 其中，前端通过ApolloClient连接至graphql endpoint（即`localhost:4000`开发服务器地址），执行所需graphql查询后拿到json格式的数据。
 
-查询的编写需参考接口层定义的schema，及neo4j-graphql的schema自动生成文档。亦可借助后端开发服务器所提供的Apollo Stuidio可视化编辑工具。
+查询的编写需参考接口层定义的schema，及neo4j-graphql的schema自动生成文档[Neo4j GraphQL Library - Queries and aggregations](https://neo4j.com/docs/graphql/current/queries-aggregations/)。亦可借助后端开发服务器所提供的[Apollo Stuidio](localhost:4000)可视化编辑工具。
 
 ### 开发运行
 
