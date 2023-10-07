@@ -9,6 +9,13 @@ import { mocks } from './mocks';
 import {graphqls2s} from 'graphql-s2s';
 config();
 
+const preDefs = `#graphql
+    directive @customResolver(requires: String!) on FIELD_DEFINITION
+    directive @relationship(type: String!, direction:Boolean!) on FIELD_DEFINITION
+
+    scalar Point
+    scalar Date
+`
 const typeDefs = graphqls2s.transpileSchema(`#graphql
     "Generic person type"
     type Person {
@@ -28,25 +35,24 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
     }
     "修习某专业"
     type MajorInRecord {
-        start: Date!
+        date: Date!
         subject: Subject! @relationship(type:"MajorIn", direction:OUT)
         major: Boolean!
-    }
-    type AbortRecord {
-        date: Date!
-        subject: Subject! @relationship(type:"Abort", direction:OUT)
+        "是否为中止"
+        isAbort: Boolean!
     }
     type RepetitionRecord {
         date: Date!
     }
-    union StudyRecord = MajorInRecord | AbortRecord | RepetitionRecord
+    union StudyRecord = MajorInRecord | RepetitionRecord
     type Student inherits Person {
         "student id"
         id: String! @unique
         "classes the student has taken"
         classes: [Class!]! @relationship(type:"Takes", direction:OUT)
         "学业变更记录"
-        studyRecords: [StudyRecord!]!
+        studyRecords: [StudyRecord!]! @relationship(type:"HasRecord", direction:OUT)
+
         # major: Subject! @customResolver(requires: "studyRecords {  }")
 
         
@@ -157,6 +163,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
 `);
 
 import fs from 'fs'
+import { printSchema } from 'graphql';
 fs.writeFileSync('schema.graphql',typeDefs)
 
 const ageResolver = (source:{birth:neoDate}) => {
@@ -173,6 +180,21 @@ const resolvers = {
     Student: {
         age: ageResolver
     }
+}
+
+const _parseSchemaObjToString = (comments, type, name, _implements, blockProps, extend=false, directive) =>
+	[
+		`${comments && comments != '' ? `\n${comments}` : ''}`,
+		`${extend ? 'extend ' : ''}${type.toLowerCase()} ${name.replace('!', '')}${_implements && _implements.length > 0 ? ` implements ${_implements.join(', ')}` : ''} ${blockProps.some(x => x) ? `${directive ? ` '' ` : ''}{`: ''} `,
+		blockProps.map(prop => `    ${prop.comments != '' ? `${prop.comments}\n    ` : ''}${prop.value}`).join('\n'),
+		blockProps.some(x => x) ? '}': ''
+	].filter(x => x).join('\n')
+
+
+const removeConstraint=(schema:string)=>{
+    const rt=schema.replaceAll('@unique','',).replaceAll('@id','')
+    // console.log('rt=',rt)
+    return rt
 }
 
 async function start(){
@@ -193,13 +215,13 @@ async function start(){
     });
     
     const server = new ApolloServer({
-        schema: await neoSchema.getSchema(),
-        // schema: addMocksToSchema({
-        //     schema: makeExecutableSchema({
-        //         typeDefs: transpileSchema(typeDefs)
-        //     }),
-        //     mocks: mocks
-        // })
+        // schema: await neoSchema.getSchema(),
+        schema: addMocksToSchema({
+            schema: makeExecutableSchema({
+                typeDefs: printSchema(await neoSchema.getSchema())
+            }),
+            mocks: mocks
+        })
     });
 
     const { url } = await startStandaloneServer(server, {
