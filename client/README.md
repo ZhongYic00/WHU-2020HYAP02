@@ -10,6 +10,18 @@ umi设定了一套完整的项目文件布局规范来自动生成很多东西�
 
 目前前端模板项目已经有登录页面了，但数据和逻辑啥的懂没接上，所以需要参考别人的写法来接我们自己的后端。
 
+## 参考资料
+
+- umi
+	- [运行时配置](https://umijs.org/docs/api/runtime-config#rootcontainerlastrootcontainer-args)
+	- [目录结构](https://umijs.org/docs/guides/directory-structure)
+	- [路由](https://umijs.org/docs/guides/routes)
+	- [Umi 4 设计思路 - 云谦 - 支付宝体验科技的文章 - 知乎](https://zhuanlan.zhihu.com/p/543526399)
+- antd-pro
+	- [新增页面](https://pro.ant.design/zh-CN/docs/new-page)
+	- [Pro Components](https://procomponents.ant.design/components)
+	- [Ant Design - 一套企业级 UI 设计语言和 React 组件库](https://ant-design.antgroup.com/index-cn)
+
 # Ant Design Pro
 
 **注意，下面的npm都换成pnpm**

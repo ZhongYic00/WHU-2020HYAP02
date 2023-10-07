@@ -8,7 +8,14 @@
 前后端采用GraphQL进行交互，目前项目已初步实现前后端基本通信，见前端项目的`/demo`页面。
 GraphQL技术较RESTful省去较多前后端磨合接口的工作，本项目采用的neo4j-graphql同时省去了后端与数据库的对接。相关参考资料如下：
 
-- 
+- graphql
+	- [Queries and Mutations | GraphQL](https://graphql.org/learn/queries/)
+	- [Schemas and Types | GraphQL](https://graphql.org/learn/schema/)
+	- [GraphQL 简介 - GitHub 文档](https://docs.github.com/zh/graphql/guides/introduction-to-graphql)
+	- [GraphQL : RESTFul的优雅替代？-- React (Umijs) + Apollo Client 搭建GraphQL 前端 入门 - 知乎](https://zhuanlan.zhihu.com/p/637472879)
+	- [Get started with Apollo Client - Apollo GraphQL Docs](https://www.apollographql.com/docs/react/get-started/)
+	- [3.neo4j-graphql的基本使用 - 掘金](https://juejin.cn/post/7116934739939819533?searchId=20231006160631A90947338939329D16CA)
+	- [GraphQL 前端工程化和性能优化 - 掘金](https://juejin.cn/post/7262022505790586941)
 
 其中，前端通过ApolloClient连接至graphql endpoint（即`localhost:4000`开发服务器地址），执行所需graphql查询后拿到json格式的数据。
 
