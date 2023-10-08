@@ -59,8 +59,8 @@ export default [
     component: './Demo'
   },
   {
-    path: '/CourseTable',
-    component: './CoureseTable',
+    path: '/CoursesTable',
+    component: './CoursesTable',
     name: '课程评价',
     icon: 'table'
   }
