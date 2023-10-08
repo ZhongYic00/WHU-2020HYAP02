@@ -1,72 +1,212 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { Neo4jGraphQL } from "@neo4j/graphql";
-import neo4j from "neo4j-driver";
+import { addMocksToSchema } from '@graphql-tools/mock';
+import { makeExecutableSchema } from '@graphql-tools/schema'
+import neo4j, { Date as neoDate,graph } from "neo4j-driver";
 import { config } from 'dotenv';
+import { mocks } from './mocks';
+import {graphqls2s} from 'graphql-s2s';
 config();
 
-const typeDefs = `#graphql
-    interface Person {
-        name: String!
-        birth: Date
-        gender: Boolean
-        id: Int!
-    }
-    type Student implements Person{
-        classes: [Class!]! @relationship(type:"Takes", direction:OUT)
+const preDefs = `#graphql
+    directive @customResolver(requires: String!) on FIELD_DEFINITION
+    directive @relationship(type: String!, direction:Boolean!) on FIELD_DEFINITION
 
+    scalar Point
+    scalar Date
+`
+const typeDefs = graphqls2s.transpileSchema(`#graphql
+    "Generic person type"
+    type Person {
         name: String!
         birth: Date
+        age: Int @customResolver(requires: "birth")
+        "biogender, 0 for male, 1 for female"
         gender: Boolean
-        id: Int! @unique
+        "stu/faculty ID"
+        id: String!
     }
-    type Teacher {
-        title: String
+    type Subject {
+        name: String! @unique
+        category: String!
+        "学制"
+        schoolingYear: Int!
+    }
+    "修习某专业"
+    type MajorInRecord {
+        date: Date!
+        subject: Subject! @relationship(type:"MajorIn", direction:OUT)
+        major: Boolean!
+        "是否为中止"
+        isAbort: Boolean!
+    }
+    type RepetitionRecord {
+        date: Date!
+    }
+    union StudyRecord = MajorInRecord | RepetitionRecord
+    type Student inherits Person {
+        "student id"
+        id: String! @unique
+        "classes the student has taken"
+        classes: [Class!]! @relationship(type:"Takes", direction:OUT)
+        "学业变更记录"
+        studyRecords: [StudyRecord!]! @relationship(type:"HasRecord", direction:OUT)
+
+        # major: Subject! @customResolver(requires: "studyRecords {  }")
+
+        
+    }
+    enum ProfessionalTitle{
+        "Full Professor"
+        Prof,
+        "Associate Professor"
+        AssocProf,
+        "Assistant Professor"
+        AssisProf,
+        Lecturer,
+    }
+    type Faculty inherits Person {
+        "faculty id"
+        id: String! @unique
+        "职务"
+        duties: [Duty!]! @relationship(type:"OnBusiness", direction:OUT)
+    }
+    union StuOrTeacher = Student | Teacher
+    "研究团队"
+    type ResearchTeam {
+        name: String!
+        members: [StuOrTeacher!]! @relationship(type:"MemberOf", direction:IN)
+    }
+    type Teacher inherits Faculty {
+        "职称"
+        title: ProfessionalTitle
+        "classes the teacher teaches"
         classes: [Class!]! @relationship(type:"Teaches", direction:OUT)
 
-        name: String!
-        birth: Date
-        gender: Boolean
-        id: Int! @unique
+        "research interests"
+        interests: [String!]!
+        "research teams"
+        teams: [ResearchTeam!]! @relationship(type:"MemberOf", direction:OUT)
     }
+    type Duty {
+        name: String!
+        depart: Department! @relationship(type:"DutyAt", direction:OUT)
+    }
+    type Department {
+        name: String!
+        parent: Department @relationship(type:"SubDepartment", direction:IN)
+        subDeparts: Department @relationship(type:"SubDepartment", direction:OUT)
+    }
+    "Repetition unit of each class"
     type Period {
+        "On which day"
         weekday: Int!
+        "Start block(节)"
         start: Int!
+        "End block"
         end: Int!
+        "Start semester week"
         weekstart: Int!
+        "End semester week"
         weekend: Int!
         weekInterval: Int!
     }
     type College {
-        name: String!
+        name: String! @unique
         courses: [Course!]! @relationship(type:"offeredBy",direction:IN)
     }
-    enum CourseType {
-        BASIC
-        INNOVATIVE
+    "通识课程类型"
+    enum HASSType {
+        Humanity,
+        Art,
+        Science,
+        SocialScience,
     }
-    type Course {
-        id: String! @unique
+    interface Course {
+        "ID in whu-jwgl"
+        id: String!
         name: String!
-        type: CourseType
+        "开课学院"
         college: [College!]! @relationship(type:"offeredBy",direction:OUT)
-        prerequisite: [Course!]! @relationship(type:"REQUIRES",direction:OUT)
-        advanceCourses: [Course!]! @relationship(type:"REQUIRES",direction:IN)
+        prerequisite: [Course!]! @relationship(type:"Requires",direction:OUT)
+        advanceCourses: [Course!]! @relationship(type:"Requires",direction:IN)
+        classes: [Class!]! @relationship(type:"ClassOf",direction:IN)
+    }
+    "专业课"
+    type DepartmentCourse implements Course inherits Course {
+        id: String! @unique
+    }
+    "公共课"
+    type GeneralCourse implements Course inherits Course {
+        id: String! @unique
+    }
+    "通识课"
+    type LiberalCourse implements Course inherits Course {
+        id: String! @unique
+        type: HASSType
+    }
+    "体育课"
+    type PECourse implements Course inherits Course {
+        id: String! @unique
+    }
+    union CourseKinds = DepartmentCourse | GeneralCourse | LiberalCourse | PECourse
+    type Query{
+        courses: [CourseKinds!]
     }
     type Class {
-        course: Course!
-        teacher: Teacher!
+        "ID in whu-jwgl"
+        id: String! @unique
+        course: Course! @relationship(type:"ClassOf", direction:OUT)
+        teacher: [Teacher!]! @relationship(type:"Teaches", direction:IN)
         position: POI
-        schedule: [Period!]! @relationship(type:"HAS_PERIOD",direction:OUT)
+        schedule: [Period!]! @relationship(type:"ClassPeriod",direction:OUT)
     }
-    type POI {  # place of interest
+    # place of information
+    type POI {
         id: ID! @id @unique
         name: String!
+        # GPS pos
         loc: Point
         subPOIs: [POI!]! @relationship(type:"locatedIn",direction:IN)
         parentPOI: POI @relationship(type:"locatedIn",direction:OUT)
     }
-`;
+`);
+
+import fs from 'fs'
+import { printSchema } from 'graphql';
+fs.writeFileSync('schema.graphql',typeDefs)
+
+const ageResolver = (source:{birth:neoDate}) => {
+    const now=new Date()
+    return now.getFullYear()-source.birth.year.toInt()
+}
+const resolvers = {
+    Person: {
+        age: ageResolver
+    },
+    Teacher: {
+        age: ageResolver,
+    },
+    Student: {
+        age: ageResolver
+    }
+}
+
+const _parseSchemaObjToString = (comments, type, name, _implements, blockProps, extend=false, directive) =>
+	[
+		`${comments && comments != '' ? `\n${comments}` : ''}`,
+		`${extend ? 'extend ' : ''}${type.toLowerCase()} ${name.replace('!', '')}${_implements && _implements.length > 0 ? ` implements ${_implements.join(', ')}` : ''} ${blockProps.some(x => x) ? `${directive ? ` '' ` : ''}{`: ''} `,
+		blockProps.map(prop => `    ${prop.comments != '' ? `${prop.comments}\n    ` : ''}${prop.value}`).join('\n'),
+		blockProps.some(x => x) ? '}': ''
+	].filter(x => x).join('\n')
+
+
+const removeConstraint=(schema:string)=>{
+    const rt=schema.replaceAll('@unique','',).replaceAll('@id','')
+    // console.log('rt=',rt)
+    return rt
+}
 
 async function start(){
 
@@ -77,12 +217,22 @@ async function start(){
         );
 
     const { keys, records, summary } = await driver.executeQuery("match (_) return count(_)")
-    console.info(keys,records,summary)
+    // console.info(keys,records,summary)
     
-    const neoSchema = new Neo4jGraphQL({ typeDefs, driver });
+    const neoSchema = new Neo4jGraphQL({
+        typeDefs,
+        driver,
+        resolvers
+    });
     
     const server = new ApolloServer({
-        schema: await neoSchema.getSchema(),
+        // schema: await neoSchema.getSchema(),
+        schema: addMocksToSchema({
+            schema: makeExecutableSchema({
+                typeDefs: printSchema(await neoSchema.getSchema())
+            }),
+            mocks: mocks
+        })
     });
 
     const { url } = await startStandaloneServer(server, {
