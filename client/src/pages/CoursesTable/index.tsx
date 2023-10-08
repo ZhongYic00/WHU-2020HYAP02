@@ -1,5 +1,5 @@
 import { ProList } from '@ant-design/pro-components';
-import { LikeOutlined, MessageOutlined, StarOutlined, StarFilled, DislikeOutlined } from '@ant-design/icons';
+import { SettingOutlined, LikeOutlined, MessageOutlined, StarOutlined, StarFilled, DislikeOutlined } from '@ant-design/icons';
 import { Button, Progress, Space, Tag, Rate } from 'antd';
 import type { Key } from 'react';
 import { useState } from 'react';
@@ -92,6 +92,20 @@ export default () => {
     
   };
 
+  const handleClickTeacher = (teacher) => {
+
+  };
+
+  const genExtra = () => (
+    <SettingOutlined
+      onClick={(event) => {
+        // If you don't want click extra trigger collapse, you can prevent this:
+        event.stopPropagation();
+      }}
+    />
+  );
+
+
   return (
     <ProList<API.CoursesTableItem>
       showActions="hover"
@@ -107,6 +121,7 @@ export default () => {
           title: '课程名称'
         },
         subTitle: {
+          search: false,
           render: (_, record) => (
             // <a key='teacher'>{record.teacher}</a>
             <div>
@@ -125,7 +140,8 @@ export default () => {
                 items={record.classes.map((item) => ({
                   key: item.id,
                   label: item.teacher,
-                  children: item.id
+                  children: item.id,
+                  extra: <a OnClick={handleClickTeacher(item.teacher)}>教师主页</a>
                 }))}
                 defaultActiveKey={['1']}
                 // onChange={onChange}
@@ -134,7 +150,7 @@ export default () => {
           )
         },
         content: {
-          // search: false,
+          search: false,
           // render: (_, record) => (
           //   <div>
           //     <div style={{display: 'inline-block', width: '100px'}}>评分：{(record.rating).toFixed(1)}/10</div>
