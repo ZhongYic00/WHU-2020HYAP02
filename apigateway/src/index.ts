@@ -72,11 +72,22 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         "职务"
         duties: [Duty!]! @relationship(type:"OnBusiness", direction:OUT)
     }
+    union StuOrTeacher = Student | Teacher
+    "研究团队"
+    type ResearchTeam {
+        name: String!
+        members: [StuOrTeacher!]! @relationship(type:"MemberOf", direction:IN)
+    }
     type Teacher inherits Faculty {
         "职称"
         title: ProfessionalTitle
         "classes the teacher teaches"
         classes: [Class!]! @relationship(type:"Teaches", direction:OUT)
+
+        "research interests"
+        interests: [String!]!
+        "research teams"
+        teams: [ResearchTeam!]! @relationship(type:"MemberOf", direction:OUT)
     }
     type Duty {
         name: String!

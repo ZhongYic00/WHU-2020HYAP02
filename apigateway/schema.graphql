@@ -63,11 +63,21 @@ type Faculty {
     "biogender, 0 for male, 1 for female"
     gender: Boolean
 }
+
+"研究团队"
+type ResearchTeam { 
+    name: String!
+    members: [StuOrTeacher!]! @relationship(type:"MemberOf", direction:IN)
+}
 type Teacher { 
     "职称"
     title: ProfessionalTitle
     "classes the teacher teaches"
     classes: [Class!]! @relationship(type:"Teaches", direction:OUT)
+    "research interests"
+    interests: [String!]!
+    "research teams"
+    teams: [ResearchTeam!]! @relationship(type:"MemberOf", direction:OUT)
     "faculty id"
     id: String! @unique
     "职务"
@@ -190,4 +200,5 @@ enum HASSType {
     SocialScience
 }
 union StudyRecord = MajorInRecord | RepetitionRecord  
+union StuOrTeacher = Student | Teacher  
 union CourseKinds = DepartmentCourse | GeneralCourse | LiberalCourse | PECourse  

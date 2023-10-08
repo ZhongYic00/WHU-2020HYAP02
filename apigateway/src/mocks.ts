@@ -29,7 +29,8 @@ export const mocks = {
         id: ()=> '2020302192187',
         birth: ()=> new neoDate(1970,1,1),
         age: ()=> 55,
-        title: ()=>'AssocProf'
+        title: ()=>'AssocProf',
+        interests: ()=>(['数字电路','图像处理'])
     }),
     Department: ()=>({
         name: ()=>'计算机系',
@@ -68,5 +69,8 @@ export const mocks = {
         id: ()=> 'dafa=aefaw8unv',
         name: '教五101',
         loc: ()=> new Point(7203,1,5.1),
+    }),
+    ResearchTeam: ()=>({
+        name: 'luojia-totem',
     })
 }
