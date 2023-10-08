@@ -46,12 +46,6 @@ export default [
     ],
   },
   {
-    name: 'list.table-list',
-    icon: 'table',
-    path: '/list',
-    component: './TableList',
-  },
-  {
     path: '/',
     redirect: '/welcome',
   },
@@ -63,5 +57,11 @@ export default [
   {
     path: '/demo',
     component: './Demo'
+  },
+  {
+    path: '/CourseTable',
+    component: './CoureseTable',
+    name: '课程评价',
+    icon: 'table'
   }
 ];
