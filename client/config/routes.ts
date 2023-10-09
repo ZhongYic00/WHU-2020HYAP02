@@ -63,5 +63,11 @@ export default [
     component: './CoursesTable',
     name: '课程评价',
     icon: 'table'
+  },
+  {
+    path: '/PersonInfo/:id',
+    component: './PersonInfo',
+    name: '人员信息',
+    icon: 'UserOutlined'
   }
 ];

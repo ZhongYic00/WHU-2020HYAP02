@@ -12,6 +12,7 @@ import {
 import React from 'react';
 import type { CollapseProps } from 'antd';
 import { Collapse } from 'antd';
+import { Link } from '@umijs/max';
 
 
 const IconText = ({ icon, text }: { icon: any; text: string }) => (
@@ -139,7 +140,7 @@ export default () => {
               <Collapse
                 items={record.classes.map((item) => ({
                   key: item.id,
-                  label: item.teacher,
+                  label: <Link to={`/personInfo/${item.id}`}>{item.teacher}</Link>,
                   children: item.id,
                   extra: <a OnClick={handleClickTeacher(item.teacher)}>教师主页</a>
                 }))}
