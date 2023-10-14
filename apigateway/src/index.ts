@@ -18,7 +18,7 @@ const preDefs = `#graphql
 `
 const typeDefs = graphqls2s.transpileSchema(`#graphql
     "Generic person type"
-    type Person {
+    interface PersonBase {
         name: String!
         birth: Date
         age: Int @customResolver(requires: "birth")
@@ -45,7 +45,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         date: Date!
     }
     union StudyRecord = MajorInRecord | RepetitionRecord
-    type Student inherits Person {
+    type Student implements PersonBase inherits PersonBase {
         "student id"
         id: String! @unique
         "classes the student has taken"
@@ -66,19 +66,21 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         AssisProf,
         Lecturer,
     }
-    type Faculty inherits Person {
-        "faculty id"
-        id: String! @unique
+    interface FacultyBase inherits PersonBase {
         "职务"
         duties: [Duty!]! @relationship(type:"OnBusiness", direction:OUT)
+        # duties: [String!]!
     }
-    union StuOrTeacher = Student | Teacher
+    type Faculty implements FacultyBase & PersonBase inherits FacultyBase {
+        "faculty id"
+        id: String! @unique
+    }
     "研究团队"
     type ResearchTeam {
         name: String!
-        members: [StuOrTeacher!]! @relationship(type:"MemberOf", direction:IN)
+        members: [PersonBase!]! @relationship(type:"MemberOf", direction:IN)
     }
-    type Teacher inherits Faculty {
+    type Teacher implements FacultyBase & PersonBase inherits Faculty {
         "职称"
         title: ProfessionalTitle
         "classes the teacher teaches"
@@ -174,7 +176,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
 `);
 
 import fs from 'fs'
-import { printSchema } from 'graphql';
+import { printSchema, validate, validateSchema } from 'graphql';
 fs.writeFileSync('schema.graphql',typeDefs)
 
 const ageResolver = (source:{birth:neoDate}) => {
@@ -182,7 +184,7 @@ const ageResolver = (source:{birth:neoDate}) => {
     return now.getFullYear()-source.birth.year.toInt()
 }
 const resolvers = {
-    Person: {
+    Faculty: {
         age: ageResolver
     },
     Teacher: {

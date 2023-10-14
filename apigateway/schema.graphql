@@ -1,4 +1,27 @@
 
+
+#graphql
+"Generic person type"
+interface PersonBase { 
+    name: String!
+    birth: Date
+    age: Int @customResolver(requires: "birth")
+    "biogender, 0 for male, 1 for female"
+    gender: Boolean
+    "stu/faculty ID"
+    id: String!
+}
+interface FacultyBase { 
+    "职务"
+    duties: [Duty!]! @relationship(type:"OnBusiness", direction:OUT)
+    name: String!
+    birth: Date
+    age: Int @customResolver(requires: "birth")
+    "biogender, 0 for male, 1 for female"
+    gender: Boolean
+    "stu/faculty ID"
+    id: String!
+}
 interface Course { 
     "ID in whu-jwgl"
     id: String!
@@ -8,18 +31,6 @@ interface Course {
     prerequisite: [Course!]! @relationship(type:"Requires",direction:OUT)
     advanceCourses: [Course!]! @relationship(type:"Requires",direction:IN)
     classes: [Class!]! @relationship(type:"ClassOf",direction:IN)
-}
-
-#graphql
-"Generic person type"
-type Person { 
-    name: String!
-    birth: Date
-    age: Int @customResolver(requires: "birth")
-    "biogender, 0 for male, 1 for female"
-    gender: Boolean
-    "stu/faculty ID"
-    id: String!
 }
 type Subject { 
     name: String! @unique
@@ -39,7 +50,7 @@ type MajorInRecord {
 type RepetitionRecord { 
     date: Date!
 }
-type Student { 
+type Student implements PersonBase { 
     "student id"
     id: String! @unique
     "classes the student has taken"
@@ -52,7 +63,7 @@ type Student {
     "biogender, 0 for male, 1 for female"
     gender: Boolean
 }
-type Faculty { 
+type Faculty implements FacultyBase& PersonBase { 
     "faculty id"
     id: String! @unique
     "职务"
@@ -67,9 +78,9 @@ type Faculty {
 "研究团队"
 type ResearchTeam { 
     name: String!
-    members: [StuOrTeacher!]! @relationship(type:"MemberOf", direction:IN)
+    members: [PersonBase!]! @relationship(type:"MemberOf", direction:IN)
 }
-type Teacher { 
+type Teacher implements FacultyBase& PersonBase { 
     "职称"
     title: ProfessionalTitle
     "classes the teacher teaches"
@@ -200,5 +211,4 @@ enum HASSType {
     SocialScience
 }
 union StudyRecord = MajorInRecord | RepetitionRecord  
-union StuOrTeacher = Student | Teacher  
 union CourseKinds = DepartmentCourse | GeneralCourse | LiberalCourse | PECourse  
