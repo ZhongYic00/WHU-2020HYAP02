@@ -17,8 +17,13 @@ const preDefs = `#graphql
     scalar Date
 `
 const typeDefs = graphqls2s.transpileSchema(`#graphql
+    "Generic independent entity type"
+    interface Entity {
+        "system internal id"
+        _id: ID @id
+    }
     "Generic person type"
-    interface PersonBase {
+    interface PersonBase implements Entity inherits Entity {
         name: String!
         birth: Date
         age: Int @customResolver(requires: "birth")
@@ -76,7 +81,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         id: String! @unique
     }
     "研究团队"
-    type ResearchTeam {
+    type ResearchTeam implements Entity inherits Entity {
         name: String!
         members: [PersonBase!]! @relationship(type:"MemberOf", direction:IN)
     }
@@ -95,7 +100,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         name: String!
         depart: Department! @relationship(type:"DutyAt", direction:OUT)
     }
-    type Department {
+    type Department implements Entity inherits Entity {
         name: String!
         parent: Department @relationship(type:"SubDepartment", direction:IN)
         subDeparts: Department @relationship(type:"SubDepartment", direction:OUT)
@@ -114,7 +119,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         weekend: Int!
         weekInterval: Int!
     }
-    type College {
+    type College implements Entity inherits Entity {
         name: String! @unique
         courses: [Course!]! @relationship(type:"offeredBy",direction:IN)
     }
@@ -125,7 +130,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         Science,
         SocialScience,
     }
-    interface Course {
+    interface Course implements Entity inherits Entity {
         "ID in whu-jwgl"
         id: String!
         name: String!
@@ -154,9 +159,18 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
     }
     union CourseKinds = DepartmentCourse | GeneralCourse | LiberalCourse | PECourse
     type Query{
-        courses: [CourseKinds!]
+        courses: [Course!]
+        people: [PersonBase!] @cypher(
+            statement: """
+            MATCH (a:Teacher)
+            RETURN a
+            UNION
+            MATCH (a:Student)
+            RETURN a""",
+            columnName: "a"
+        )
     }
-    type Class {
+    type Class implements Entity inherits Entity {
         "ID in whu-jwgl"
         id: String! @unique
         course: Course! @relationship(type:"ClassOf", direction:OUT)
@@ -165,8 +179,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         schedule: [Period!]! @relationship(type:"ClassPeriod",direction:OUT)
     }
     # place of information
-    type POI {
-        id: ID! @id @unique
+    type POI implements Entity inherits Entity {
         name: String!
         # GPS pos
         loc: Point
