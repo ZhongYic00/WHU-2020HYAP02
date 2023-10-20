@@ -50,7 +50,8 @@ declare namespace API {
   };
 
   type CoursesTableItem = {
-
+    id: number;
+    name: string;
   }
 
   type RuleList = {
