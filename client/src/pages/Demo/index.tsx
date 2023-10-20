@@ -60,13 +60,34 @@ const basicField=['id','name']
 
 const date2str = (d:{year:string,month:string,day:string}) => `${d.year}-${d.month}-${d.day}`
 
-const Demo: React.FC = () => {
+export type ObjectInputProps={
+  schemaName:string
+}
+const ObjectInput: React.FC<ObjectInputProps> = ({schemaName}) => {
+  const query=gql`
+  query($schemaName:String!) {
+    __type(name:$schemaName){
+      fields{
+        name
+      }
+    }
+  }
+  `
+  {
+    const {data,error} = useQuery(query,{variables:{schemaName:schemaName}})
+    console.log(query,schemaName,'__type:',data||error)
+  }
+  return (<div></div>)
+}
+
+const Demo: React.FC= () => {
   const { token } = theme.useToken();
   const { initialState } = useModel('@@initialState');
   const { loading, error, data } = useQuery(PeriodsQuery);
   const [expandedRowKeys, setExpandedRowKeys] = useState<readonly Key[]>([]);
   return (
     <PageContainer>
+        <ObjectInput schemaName='Teacher' />
         {data && data['students'] &&
         [(<ProList<{ title: string }>
           rowKey="id"
