@@ -204,18 +204,6 @@ type PECourse implements Course& Entity {
     "system internal id"
     _id: ID @id
 }
-type Query { 
-    courses: [Course!]
-    people: [PersonBase!] @cypher(
-    statement: """
-    MATCH(a: Teacher)
-    RETURN a
-    UNION
-    MATCH(a: Student)
-    RETURN a"""
-    columnName: "a"
-    )
-}
 type Class implements Entity { 
     "ID in whu-jwgl"
     id: String! @unique
@@ -256,3 +244,20 @@ enum HASSType {
 }
 union StudyRecord = MajorInRecord | RepetitionRecord  
 union CourseKinds = DepartmentCourse | GeneralCourse | LiberalCourse | PECourse  
+union PersonUnion = Student | Faculty | Teacher  #graphql
+type Query{
+        courses: [CourseKinds!] @cypher(
+            statement:"""
+MATCH (n)
+WHERE ANY(label IN labels(n) WHERE label IN ['GeneralCourse', 'DepartmentCourse', 'PECourse'])
+RETURN n""",
+            columnName:"n"
+        )
+        people: [PersonUnion!] @cypher(
+            statement:"""
+MATCH (n)
+WHERE ANY(label IN labels(n) WHERE label IN ['Student', 'Teacher', 'Faculty'])
+RETURN n""",
+            columnName:"n"
+        )
+    }

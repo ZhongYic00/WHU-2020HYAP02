@@ -158,18 +158,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         id: String! @unique
     }
     union CourseKinds = DepartmentCourse | GeneralCourse | LiberalCourse | PECourse
-    type Query{
-        courses: [Course!]
-        people: [PersonBase!] @cypher(
-            statement: """
-            MATCH (a:Teacher)
-            RETURN a
-            UNION
-            MATCH (a:Student)
-            RETURN a""",
-            columnName: "a"
-        )
-    }
+    union PersonUnion = Student | Faculty | Teacher
     type Class implements Entity inherits Entity {
         "ID in whu-jwgl"
         id: String! @unique
@@ -186,7 +175,27 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         subPOIs: [POI!]! @relationship(type:"locatedIn",direction:IN)
         parentPOI: POI @relationship(type:"locatedIn",direction:OUT)
     }
-`);
+`) + 
+// graphql-s2s parsing cannot solve following statements
+`#graphql
+type Query{
+        courses: [CourseKinds!] @cypher(
+            statement:"""
+MATCH (n)
+WHERE ANY(label IN labels(n) WHERE label IN ['GeneralCourse', 'DepartmentCourse', 'PECourse'])
+RETURN n""",
+            columnName:"n"
+        )
+        people: [PersonUnion!] @cypher(
+            statement:"""
+MATCH (n)
+WHERE ANY(label IN labels(n) WHERE label IN ['Student', 'Teacher', 'Faculty'])
+RETURN n""",
+            columnName:"n"
+        )
+    }
+`
+;
 
 import fs from 'fs'
 import { printSchema, validate, validateSchema } from 'graphql';
@@ -241,14 +250,15 @@ async function start(){
     });
     
     const server = new ApolloServer({
-        // schema: await neoSchema.getSchema(),
-        schema: addMocksToSchema({
-            schema: makeExecutableSchema({
-                typeDefs: printSchema(await neoSchema.getSchema())
-            }),
-            mocks: mocks
-        })
+        schema: await neoSchema.getSchema(),
+        // schema: addMocksToSchema({
+            //     schema: makeExecutableSchema({
+                //         typeDefs: printSchema(await neoSchema.getSchema())
+        //     }),
+        //     mocks: mocks
+        // })
     });
+    neoSchema.assertIndexesAndConstraints({ options: { create: true }});
 
     const { url } = await startStandaloneServer(server, {
         context: async ({ req }) => ({ req }),
