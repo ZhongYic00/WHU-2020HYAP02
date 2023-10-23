@@ -32,20 +32,6 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         "stu/faculty ID"
         id: String!
     }
-    
-    type Post {
-        user: Identity
-        createTime: DateTime
-        content: Entity!
-        cite:[Post!]! @relationship(type: "citeOther", direction: OUT)
-        Attitude:Boolean 
-        "True: to complement; False: to correct"
-    }
-    type Identity implements Entity inherits Entity {
-        nickname: String!
-        realperson: PersonBase! @relationship(type:"Owner", direction:OUT)
-    }
-
     type Subject {
         name: String! @unique
         category: String!
