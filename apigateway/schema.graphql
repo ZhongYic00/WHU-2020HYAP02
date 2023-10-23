@@ -44,19 +44,6 @@ interface Course implements Entity {
     "system internal id"
     _id: ID @id
 }
-type Post { 
-    user: Identity
-    createTime: DateTime
-    content: Entity!
-    cite: [Post!]! @relationship(type: "citeOther", direction: OUT)
-    Attitude: Boolean
-}
-type Identity implements Entity { 
-    nickname: String!
-    realperson: PersonBase! @relationship(type:"Owner", direction:OUT)
-    "system internal id"
-    _id: ID @id
-}
 type Subject { 
     name: String! @unique
     category: String!
