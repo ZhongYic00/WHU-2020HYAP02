@@ -34,15 +34,37 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
     }
 
     type Post {
-        user: Identity 
+        poster: Identity 
         createTime: DateTime
         content: Entity!
         cite:[Post!]! @relationship(type: "citeOther", direction: OUT)
-        Attitude:Boolean 
-        "True: to complement"
-        "False: to correct"
+        Attitude: Boolean 
+        "True: to complement;False: to correct"
+        likes: Int! 
+        dislikes: Int! 
+        createdAt: DateTime!
 
     }
+    const resolvers = { 
+        Query: { 
+            validPosts: (_, __, context) => { 
+                const allPosts = {} "get the data of all posts"
+                const validPosts = allPosts.filter(post => post.location && post.course); 
+                return validPosts; }, 
+                postsSortedByScoreAndTime: (_, __, context) => { 
+                    const allPosts = {} "get the data of all posts"
+                    const validPosts = allPosts.filter(post => post.location && post.course); 
+                    const sortedPosts = validPosts.sort((a, b) => { 
+                        const scoreComparison = (a.likes - a.dislikes) - (b.likes - b.dislikes);  
+                        if (scoreComparison === 0) { 
+                            return new Date(b.createdAt) - new Date(a.createdAt); 
+                            } 
+                        return scoreComparison; 
+                        }); 
+                    return sortedPosts; 
+                    } 
+                } 
+    };
     type Identity implements Entity inherits Entity {
         nickname: String!
         realperson: PersonBase! @relationship(type:"Owner", direction:OUT)

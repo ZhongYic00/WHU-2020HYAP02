@@ -45,11 +45,15 @@ interface Course implements Entity {
     _id: ID @id
 }
 type Post { 
-    user: Identity
+    poster: Identity
     createTime: DateTime
     content: Entity!
     cite: [Post!]! @relationship(type: "citeOther", direction: OUT)
     Attitude: Boolean
+    "True: to complement;False: to correct"
+    likes: Int!
+    dislikes: Int!
+    createdAt: DateTime!
 }
 type Identity implements Entity { 
     nickname: String!
