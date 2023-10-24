@@ -46,20 +46,21 @@ interface Course implements Entity {
 }
 type Post { 
     poster: Identity
-    createTime: DateTime
+    createdAt: DateTime!
     content: Entity!
-    cite: [Post!]! @relationship(type: "citeOther", direction: OUT)
-    Attitude: Boolean
-    "True: to complement;False: to correct"
+    cites: [citeRelation!]!
     likes: Int!
     dislikes: Int!
-    createdAt: DateTime!
 }
 type Identity implements Entity { 
     nickname: String!
     realperson: PersonBase! @relationship(type:"Owner", direction:OUT)
     "system internal id"
     _id: ID @id
+}
+type citeRelation { 
+    post: Post!
+    attitude: Boolean
 }
 type Subject { 
     name: String! @unique
