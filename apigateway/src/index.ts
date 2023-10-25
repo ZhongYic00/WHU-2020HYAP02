@@ -13,6 +13,11 @@ const toCypherRequire = s => {
     .replaceAll('\#graphql\n','')
     .replaceAll('\n',',')
 }
+const toFilter = s=>
+    s.replaceAll('\#graphql','')
+    .replaceAll('\n','')
+    .replaceAll(' ','')
+
 const majorReqStr = toCypherRequire(`#graphql
 studyRecords {
     ... on MajorInRecord {
@@ -25,6 +30,32 @@ studyRecords {
     }
 }
 `)
+const postClassmatesFilter = toFilter(`#graphql
+{where:{
+AND: [{
+    node:{
+      user: {
+        realpersonConnection: {
+          node:{
+            _on:{
+              Student:{
+                adminClass: {
+                  students_SOME: {
+                    name: "zyc"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    },{
+      node: {
+        policy: "Classmates"
+      }
+    }]
+}}`)
 const preDefs = `#graphql
     directive @customResolver(requires: String!) on FIELD_DEFINITION
     directive @relationship(type: String!, direction:Boolean!) on FIELD_DEFINITION
@@ -57,15 +88,6 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
     }
     type Article implements Entity inherits Entity {
         content: String!
-    }
-    "Generic post type, info platform UGC unit"
-    type Post implements Entity inherits Entity{
-        user: Identity! @relationship(type: "CreatedBy",direction:OUT)
-        "Post creation time"
-        createdAt: DateTime! @timestamp(operations: [CREATE])
-        content: Entity! @relationship(type: "PostContent", direction:OUT)
-        cite:[Post!]! @relationship(type: "citeOther", direction: OUT, properties: "Citation")
-        policy: VisibilityPolicy!
     }
     interface Citation @relationshipProperties {
         "True: to complement; False: to correct"
@@ -249,6 +271,21 @@ WHERE ANY(label IN labels(n) WHERE label IN ['Student', 'Teacher', 'Faculty'])
 RETURN n""",
             columnName:"n"
         )
+    }
+    "Generic post type, info platform UGC unit"
+    type Post implements Entity
+    @authorization(filter:[
+        {where:{node:{policy:"AllUsers"}}},
+        ${postClassmatesFilter},
+    ])
+    {
+        user: Identity! @relationship(type: "CreatedBy",direction:OUT)
+        "Post creation time"
+        createdAt: DateTime! @timestamp(operations: [CREATE])
+        content: Entity! @relationship(type: "PostContent", direction:OUT)
+        cite:[Post!]! @relationship(type: "citeOther", direction: OUT, properties: "Citation")
+        policy: VisibilityPolicy!
+        _id: ID @id
     }
 `
 ;
