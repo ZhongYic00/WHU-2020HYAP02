@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { makeJwt } from '../../apigateway/src/auth';
 
 const waitTime = (time: number = 100) => {
   return new Promise((resolve) => {
@@ -120,11 +121,17 @@ export default {
   'POST /api/login/account': async (req: Request, res: Response) => {
     const { password, username, type } = req.body;
     await waitTime(2000);
+    let login_json = {
+      username: username,
+      password: password
+    };
+    let jwt1 = makeJwt(login_json);
     if (password === 'ant.design' && username === 'admin') {
       res.send({
         status: 'ok',
         type,
         currentAuthority: 'admin',
+        jwt: jwt1,
       });
       access = 'admin';
       return;
@@ -134,6 +141,7 @@ export default {
         status: 'ok',
         type,
         currentAuthority: 'user',
+        jwt: jwt1,
       });
       access = 'user';
       return;
@@ -143,6 +151,7 @@ export default {
         status: 'ok',
         type,
         currentAuthority: 'admin',
+        jwt: jwt1,
       });
       access = 'admin';
       return;
@@ -152,6 +161,7 @@ export default {
       status: 'error',
       type,
       currentAuthority: 'guest',
+      jwt: jwt1,
     });
     access = 'guest';
   },

@@ -1,5 +1,6 @@
 import { Footer } from '@/components';
 import { login } from '@/services/ant-design-pro/api';
+import { can_do_something } from '/workspaces/WHU-2020HYAP02/apigateway/src/auth';
 import { getFakeCaptcha } from '@/services/ant-design-pro/login';
 import {
   AlipayCircleOutlined,
@@ -118,15 +119,23 @@ const Login: React.FC = () => {
     try {
       // 登录
       const msg = await login({ ...values, type });
+      // console.log('jwt!!!!!!!!!');
+      global.__jwt__ = msg.jwt!;
       if (msg.status === 'ok') {
-        const defaultLoginSuccessMessage = intl.formatMessage({
-          id: 'pages.login.success',
-          defaultMessage: '登录成功！',
-        });
-        message.success(defaultLoginSuccessMessage);
-        await fetchUserInfo();
-        const urlParams = new URL(window.location.href).searchParams;
-        history.push(urlParams.get('redirect') || '/');
+        if(can_do_something(__jwt__, 'login') == 1){
+          const defaultLoginSuccessMessage = intl.formatMessage({
+            id: 'pages.login.success',
+            defaultMessage: '登录成功！',
+          });
+          message.success(defaultLoginSuccessMessage);
+          await fetchUserInfo();
+          const urlParams = new URL(window.location.href).searchParams;
+          history.push(urlParams.get('redirect') || '/');
+        }
+        else {
+          history.push('../404' || '/');
+        }
+        // history.push(urlParams.get('redirect') || '/');
         return;
       }
       console.log(msg);

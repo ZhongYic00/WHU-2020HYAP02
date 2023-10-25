@@ -53,6 +53,7 @@
     "@umijs/route-utils": "^2.2.2",
     "antd": "^5.8.4",
     "classnames": "^2.3.2",
+    "crypto-js": "^4.2.0",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
     "omit.js": "^2.0.2",

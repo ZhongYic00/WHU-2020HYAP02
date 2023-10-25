@@ -27,6 +27,7 @@ declare namespace API {
     status?: string;
     type?: string;
     currentAuthority?: string;
+    jwt?: string;
   };
 
   type PageParams = {
@@ -71,6 +72,7 @@ declare namespace API {
     password?: string;
     autoLogin?: boolean;
     type?: string;
+    
   };
 
   type ErrorResponse = {
