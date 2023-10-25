@@ -80,11 +80,21 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         date: Date!
     }
     union StudyRecord = MajorInRecord | RepetitionRecord
+
+    "行政班 administrative class"
+    type AdminClass implements Entity inherits Entity {
+        "literal name"
+        name: String!
+        students: [Student!]! @relationship(type:"BelongsTo", direction:IN)
+        head: Teacher! @relationship(type:"HeadOf", direction:IN)
+    }
     type Student implements PersonBase inherits PersonBase {
         "student id"
         id: String! @unique
         "classes the student has taken"
         classes: [Class!]! @relationship(type:"Takes", direction:OUT)
+        "行政班"
+        adminClass: AdminClass! @relationship(type:"BelongsTo",direction:OUT)
         "学业变更记录"
         studyRecords: [StudyRecord!]! @relationship(type:"HasRecord", direction:OUT)
 
@@ -119,6 +129,8 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         title: ProfessionalTitle
         "classes the teacher teaches"
         classes: [Class!]! @relationship(type:"Teaches", direction:OUT)
+        "所指导班级"
+        adminClasses: [AdminClass!]! @relationship(type:"HeadOf", direction:OUT)
 
         "research interests"
         interests: [String!]!
