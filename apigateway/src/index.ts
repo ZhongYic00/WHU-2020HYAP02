@@ -48,14 +48,29 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         "stu/faculty ID"
         id: String!
     }
-    
+    enum VisibilityPolicy {
+        AllUsers,
+        Classmates,
+        Schoolmates,
+        Students,
+        TeacherAndStudents
+    }
+    type Article implements Entity inherits Entity {
+        content: String!
+    }
+    "Generic post type, info platform UGC unit"
     type Post implements Entity inherits Entity{
         user: Identity! @relationship(type: "CreatedBy",direction:OUT)
-        createTime: DateTime
-        content: Entity!
-        cite:[Post!]! @relationship(type: "citeOther", direction: OUT)
+        "Post creation time"
+        createdAt: DateTime! @timestamp(operations: [CREATE])
+        content: Entity! @relationship(type: "PostContent", direction:OUT)
+        cite:[Post!]! @relationship(type: "citeOther", direction: OUT, properties: "Citation")
+        policy: VisibilityPolicy!
+    }
+    interface Citation @relationshipProperties {
         "True: to complement; False: to correct"
-        Attitude:Boolean 
+        Attitude:Boolean!
+        createdAt: DateTime! @timestamp(operations: [CREATE])
     }
     type Identity implements Entity inherits Entity {
         nickname: String!

@@ -19,6 +19,11 @@ interface PersonBase implements Entity {
     "system internal id"
     _id: ID @id
 }
+interface Citation  @relationshipProperties { 
+    "True: to complement; False: to correct"
+    Attitude: Boolean!
+    createdAt: DateTime! @timestamp(operations: [CREATE])
+}
 interface FacultyBase { 
     "职务"
     duties: [Duty!]! @relationship(type:"OnBusiness", direction:OUT)
@@ -44,13 +49,20 @@ interface Course implements Entity {
     "system internal id"
     _id: ID @id
 }
+type Article implements Entity { 
+    content: String!
+    "system internal id"
+    _id: ID @id
+}
+
+"Generic post type, info platform UGC unit"
 type Post implements Entity { 
     user: Identity! @relationship(type: "CreatedBy",direction:OUT)
-    createTime: DateTime
-    content: Entity!
-    cite: [Post!]! @relationship(type: "citeOther", direction: OUT)
-    "True: to complement; False: to correct"
-    Attitude: Boolean
+    "Post creation time"
+    createdAt: DateTime! @timestamp(operations: [CREATE])
+    content: Entity! @relationship(type: "PostContent", direction:OUT)
+    cite: [Post!]! @relationship(type: "citeOther", direction: OUT, properties: "Citation")
+    policy: VisibilityPolicy!
     "system internal id"
     _id: ID @id
 }
@@ -255,6 +267,13 @@ type POI implements Entity {
     parentPOI: POI @relationship(type:"locatedIn",direction:OUT)
     "system internal id"
     _id: ID @id
+}
+enum VisibilityPolicy { 
+    AllUsers
+    Classmates
+    Schoolmates
+    Students
+    TeacherAndStudents
 }
 enum ProfessionalTitle { 
     "Full Professor"
