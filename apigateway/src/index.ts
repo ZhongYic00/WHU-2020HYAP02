@@ -40,6 +40,8 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         cites: [citeRelation!]!
         likes: Int!
         dislikes: Int!
+        accountsLike: [Identity!]!
+        accountsDislike: [Identity!]!
     }
 
     type Identity implements Entity inherits Entity {

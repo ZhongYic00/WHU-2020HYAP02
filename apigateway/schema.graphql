@@ -51,6 +51,8 @@ type Post {
     cites: [citeRelation!]!
     likes: Int!
     dislikes: Int!
+    accountsLike: [Identity!]!
+    accountsDislike: [Identity!]!
 }
 type Identity implements Entity { 
     nickname: String!
