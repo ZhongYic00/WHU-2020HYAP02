@@ -8,7 +8,23 @@ import { config } from 'dotenv';
 import { mocks } from './mocks';
 import {graphqls2s} from 'graphql-s2s';
 config();
-
+const toCypherRequire = s => {
+    return s
+    .replaceAll('\#graphql\n','')
+    .replaceAll('\n',',')
+}
+const majorReqStr = toCypherRequire(`#graphql
+studyRecords {
+    ... on MajorInRecord {
+        date
+        isAbort
+        major
+        subject {
+            name
+        }
+    }
+}
+`)
 const preDefs = `#graphql
     directive @customResolver(requires: String!) on FIELD_DEFINITION
     directive @relationship(type: String!, direction:Boolean!) on FIELD_DEFINITION
@@ -33,13 +49,13 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         id: String!
     }
     
-    type Post {
-        user: Identity
+    type Post implements Entity inherits Entity{
+        user: Identity! @relationship(type: "CreatedBy",direction:OUT)
         createTime: DateTime
         content: Entity!
         cite:[Post!]! @relationship(type: "citeOther", direction: OUT)
-        Attitude:Boolean 
         "True: to complement; False: to correct"
+        Attitude:Boolean 
     }
     type Identity implements Entity inherits Entity {
         nickname: String!
@@ -72,8 +88,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         "学业变更记录"
         studyRecords: [StudyRecord!]! @relationship(type:"HasRecord", direction:OUT)
 
-        # major: Subject! @customResolver(requires: "studyRecords {  }")
-
+        major: Subject! @customResolver(requires: "${majorReqStr}")
         
     }
     enum ProfessionalTitle{
@@ -227,7 +242,17 @@ const resolvers = {
         age: ageResolver,
     },
     Student: {
-        age: ageResolver
+        age: ageResolver,
+        major: (node:{studyRecords:[{date:neoDate,major:boolean,isAbort:boolean,subject:any}]})=>{
+            console.log(node.studyRecords)
+            const [record]=node.studyRecords
+            ?.filter(_=>_.major)
+            ?.sort((a,b)=> a.date.toStandardDate()<b.date.toStandardDate()?-1:1 )
+            .slice(-1)
+            console.log(record)
+            if(record.isAbort) throw "MajorInRecord invalid!"
+            return record.subject
+        }
     }
 }
 

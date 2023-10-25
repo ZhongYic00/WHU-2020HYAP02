@@ -44,12 +44,15 @@ interface Course implements Entity {
     "system internal id"
     _id: ID @id
 }
-type Post { 
-    user: Identity
+type Post implements Entity { 
+    user: Identity! @relationship(type: "CreatedBy",direction:OUT)
     createTime: DateTime
     content: Entity!
     cite: [Post!]! @relationship(type: "citeOther", direction: OUT)
+    "True: to complement; False: to correct"
     Attitude: Boolean
+    "system internal id"
+    _id: ID @id
 }
 type Identity implements Entity { 
     nickname: String!
@@ -82,6 +85,7 @@ type Student implements PersonBase& Entity {
     classes: [Class!]! @relationship(type:"Takes", direction:OUT)
     "学业变更记录"
     studyRecords: [StudyRecord!]! @relationship(type:"HasRecord", direction:OUT)
+    major: Subject! @customResolver(requires: "studyRecords {, ... on MajorInRecord {, date, isAbort, major, subject {, name, }, },},")
     name: String!
     birth: Date
     age: Int @customResolver(requires: "birth")
