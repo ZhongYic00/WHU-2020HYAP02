@@ -1,19 +1,15 @@
-import { ProList } from '@ant-design/pro-components';
+import { ProList, PageContainer } from '@ant-design/pro-components';
+import { gql, useQuery } from '@apollo/client';
 import { SettingOutlined, LikeOutlined, MessageOutlined, StarOutlined, StarFilled, DislikeOutlined } from '@ant-design/icons';
-import { Button, Progress, Space, Tag, Rate } from 'antd';
-import type { Key } from 'react';
-import { useState } from 'react';
+import { Button, Progress, Space, Tag, Rate, Collapse, CollapseProps } from 'antd';
+import React, { Key, useState } from 'react';
 import {
   ProCard,
   ProForm,
   ProFormList,
   ProFormText,
 } from '@ant-design/pro-components';
-import React from 'react';
-import type { CollapseProps } from 'antd';
-import { Collapse } from 'antd';
 import { Link } from '@umijs/max';
-
 
 const IconText = ({ icon, text }: { icon: any; text: string }) => (
   <span>
@@ -23,67 +19,121 @@ const IconText = ({ icon, text }: { icon: any; text: string }) => (
 );
 
 // 后端从数据库读取的数据
-// import { courseData } from './components/CourseData';
-
-// 用于前端编写时的测试数据
-const courseData = [
-  {
-    name: '计算机组成原理',
-    id: '123456',
-    courseType: '专业必修',
-    college: '计算机学院',
-    rating: 9.85,
-    comment: 35,
-    classes: [
-      {
-        id: '123456-1', 
-        teacher: "蔡朝晖",
-      },
-      {
-        id: '123456-2',
-        teacher: "龚奕利"
+const CourseQuery = gql`
+query CourseQuery {
+  courses {
+    ... on DepartmentCourse {
+      __typename
+      classes {
+        id
+        position {
+          id
+          name
+        }
+        schedule {
+          end
+          start
+          weekInterval
+          weekday
+          weekend
+          weekstart
+        }
+        teacher {
+          id
+          name
+        }
       }
-    ]
-  },
-  {
-    name: '高等数学',
-    id: '3456789',
-    courseType: '公共必修',
-    college: '数学与统计学院',
-    rating: 9.67,
-    comment: 14,
-    classes: [
-      {
-        id: '3456789-1', 
-        teacher: "胡新启"
-      },
-      {
-        id: '3456789-2',
-        teacher: "黄正华"
+      id
+      name
+      college {
+        name
       }
-    ]
-  },
-  {
-    name: '线性代数',
-    id: '7894561',
-    courseType: '专业必修',
-    college: '数学与统计学院',
-    rating: 9.68,
-    comment: 18,
-    classes: [
-      {
-        id: '7894561-1', 
-        teacher: "胡新启"
-      },
-      {
-        id: '7894561-2',
-        teacher: "黄正华"
+    }
+    ... on GeneralCourse {
+      __typename
+      classes {
+        id
+        position {
+          id
+          name
+        }
+        schedule {
+          end
+          start
+          weekInterval
+          weekday
+          weekend
+          weekstart
+        }
+        teacher {
+          id
+          name
+        }
       }
-    ]
+      id
+      name
+      college {
+        name
+      }
+    }
+    ... on LiberalCourse {
+      __typename
+      classes {
+        id
+        position {
+          id
+          name
+        }
+        schedule {
+          end
+          start
+          weekInterval
+          weekday
+          weekend
+          weekstart
+        }
+        teacher {
+          id
+          name
+        }
+      }
+      id
+      name
+      college {
+        name
+      }
+      type
+    }
+    ... on PECourse {
+      __typename
+      classes {
+        id
+        position {
+          id
+          name
+        }
+        schedule {
+          end
+          start
+          weekInterval
+          weekday
+          weekend
+          weekstart
+        }
+        teacher {
+          id
+          name
+        }
+      }
+      id
+      name
+      college {
+        name
+      }
+    }
   }
-];
-
-
+}
+`;
 
 export default () => {
 
@@ -93,8 +143,8 @@ export default () => {
     
   };
 
-  const handleClickTeacher = (teacher) => {
-
+  const handleClick1 = (id) => {
+    console.log(id);
   };
 
   const genExtra = () => (
@@ -106,65 +156,101 @@ export default () => {
     />
   );
 
+  const { loading, error, data } = useQuery(CourseQuery);
+
+  console.log(data);
 
   return (
-    <ProList<API.CoursesTableItem>
-      showActions="hover"
-      rowKey="courseID"
-      headerTitle="课程列表"
-      dataSource={courseData}
-      // itemLayout="vertical"
-      search={{}}
-      expandable={{expandedRowKeys, onExpandedRowsChange: setExpandedRowKeys}}
-      metas={{
-        title: {
-          dataIndex: 'name',
-          title: '课程名称'
-        },
-        subTitle: {
-          search: false,
-          render: (_, record) => (
-            // <a key='teacher'>{record.teacher}</a>
-            <div>
-              <Tag>{record.courseType}</Tag>
-              <Tag>开课学院：{record.college}</Tag>
-            </div>
-            
-          )
-        },
-        description: {
-          search: false,
-          render: (_, record) => (
-            <div>
-              <p> </p>
-              <Collapse
-                items={record.classes.map((item) => ({
-                  key: item.id,
-                  label: <Link to={`/personInfo/${item.id}`}>{item.teacher}</Link>,
-                  children: item.id,
-                  extra: <a OnClick={handleClickTeacher(item.teacher)}>教师主页</a>
-                }))}
-                defaultActiveKey={['1']}
-                // onChange={onChange}
-              ></Collapse>
-            </div>
-          )
-        },
-        content: {
-          search: false,
-          // render: (_, record) => (
-          //   <div>
-          //     <div style={{display: 'inline-block', width: '100px'}}>评分：{(record.rating).toFixed(1)}/10</div>
-          //     <div style={{display: 'inline-block'}}>基于{record.comment}条评价</div>
-          //   </div>
-          // ),
-        },
-        actions: {
-          render: (_, record) => {
-            return <a key="comment" onClick={handleClickComment(record.id)}>评价</a>;
-          },
-        },
-      }}
-    />
+    <PageContainer>
+      { data && data['courses'] && 
+      [[data.courses].map((courses) => (
+          <ProList<API.CoursesTableItem>
+            showActions="hover"
+            rowKey="courseID"
+            headerTitle="课程列表"
+            dataSource={courses}
+            // itemLayout="vertical"
+            search={{}}
+            expandable={{expandedRowKeys, onExpandedRowsChange: setExpandedRowKeys}}
+            metas={{
+              title: {
+                dataIndex: 'name',
+                title: '课程名称'
+              },
+              subTitle: {
+                search: false,
+                render: (_, record) => {
+                  let tagText, tagColor;
+                  switch (record.__typename) {
+                    case 'DepartmentCourse':
+                      tagText = '专业课';
+                      tagColor = 'blue';
+                      break;
+                    case 'GeneralCourse':
+                      tagText = '公共课';
+                      tagColor = 'red';
+                      break;
+                    case 'LiberalCourse':
+                      tagText = '通识课';
+                      tagColor = 'green';
+                      break;
+                    // 可以继续添加其他情况
+                    default:
+                      tagText = '体育课';
+                      tagColor = 'yellow';
+                      break;
+                  }
+                
+                  return (
+                    <div>
+                      <Tag color={tagColor}>{tagText}</Tag>
+                      <Tag>开课学院：{record.college[0].name}</Tag>
+                    </div>
+                  );
+                }
+                // render: (_, record) => (
+                //   <div>
+                //     <Tag>{record.__typename}</Tag>
+                //     <Tag color="green">开课学院：{record.college[0].name}</Tag>
+                //   </div>
+                // )
+              },
+              description: {
+                search: false,
+                render: (_, record) => (
+                  <div>
+                    <p> </p>
+                    <Collapse
+                      items={
+                        record.classes.map((item, index) => ({
+                            key: index,
+                            label: <Link to={`/personInfo/${item.teacher[0].id}`}>{item.teacher[0].name}</Link>,
+                            children: <div>这是内容</div>,
+                            extra: <a key={`comment_${item.id}`}>评价</a>
+                        }))
+                      }
+                      collapsible="icon"
+                    ></Collapse>
+                  </div>
+                )
+              },
+              content: {
+                search: false,
+                // render: (_, record) => (
+                //   <div>
+                //     <div style={{display: 'inline-block', width: '100px'}}>评分：{(record.rating).toFixed(1)}/10</div>
+                //     <div style={{display: 'inline-block'}}>基于{record.comment}条评价</div>
+                //   </div>
+                // ),
+              },
+              actions: {
+                
+              },
+            }}
+          />
+          ))
+        ]
+      }
+    </PageContainer>
   );
 };

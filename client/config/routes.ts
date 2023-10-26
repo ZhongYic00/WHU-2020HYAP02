@@ -69,5 +69,21 @@ export default [
     component: './PersonInfo',
     name: '人员信息',
     icon: 'UserOutlined'
+  },
+  {
+    path:'/InfoUpload',
+    component: './InfoUpload',
+    name: '信息平台——上传',
+    icon: 'table'
+  },
+  {
+    path:'/MyInfo',
+    component:'./MyInfo',
+    name:'个人信息',
+    icon:'UserOutlined',
+  },
+  {
+    path:'/MyInfo/update',
+    component:'./MyInfo/Update'
   }
 ];
