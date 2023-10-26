@@ -90,5 +90,9 @@ export default [
     path:'/Posts',
     component:'./Posts',
     name:'信息平台浏览'
+  },
+  {
+    path:'/view/:type/:id',
+    component:'./Viewer',
   }
 ];

@@ -86,7 +86,7 @@ const App: React.FC = () => {
                     />
                   }
               >
-                <Link to={`/view/${item.content._id}`}>{`${item.content.__typename} by ${item.user.nickname}`}</Link>
+                <Link to={`/view/${item.__typename}/${item._id}`}>{`${item.content.__typename} by ${item.user.nickname}`}</Link>
                 <p>{`created At ${item.createdAt}`}</p>
               </Card>
             </List.Item>
