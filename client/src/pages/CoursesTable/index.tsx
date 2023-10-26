@@ -25,9 +25,9 @@ query CourseQuery {
     ... on DepartmentCourse {
       __typename
       classes {
-        id
+        _id
         position {
-          id
+          _id
           name
         }
         schedule {
@@ -39,11 +39,11 @@ query CourseQuery {
           weekstart
         }
         teacher {
-          id
+          _id
           name
         }
       }
-      id
+      _id
       name
       college {
         name
@@ -52,9 +52,9 @@ query CourseQuery {
     ... on GeneralCourse {
       __typename
       classes {
-        id
+        _id
         position {
-          id
+          _id
           name
         }
         schedule {
@@ -66,11 +66,11 @@ query CourseQuery {
           weekstart
         }
         teacher {
-          id
+          _id
           name
         }
       }
-      id
+      _id
       name
       college {
         name
@@ -79,9 +79,9 @@ query CourseQuery {
     ... on LiberalCourse {
       __typename
       classes {
-        id
+        _id
         position {
-          id
+          _id
           name
         }
         schedule {
@@ -93,11 +93,11 @@ query CourseQuery {
           weekstart
         }
         teacher {
-          id
+          _id
           name
         }
       }
-      id
+      _id
       name
       college {
         name
@@ -107,9 +107,9 @@ query CourseQuery {
     ... on PECourse {
       __typename
       classes {
-        id
+        _id
         position {
-          id
+          _id
           name
         }
         schedule {
@@ -121,11 +121,11 @@ query CourseQuery {
           weekstart
         }
         teacher {
-          id
+          _id
           name
         }
       }
-      id
+      _id
       name
       college {
         name
@@ -204,7 +204,7 @@ export default () => {
                   return (
                     <div>
                       <Tag color={tagColor}>{tagText}</Tag>
-                      <Tag>开课学院：{record.college[0].name}</Tag>
+                      <Tag>开课学院：{record.college[0]?.name}</Tag>
                     </div>
                   );
                 }
@@ -224,7 +224,7 @@ export default () => {
                       items={
                         record.classes.map((item, index) => ({
                             key: index,
-                            label: <Link to={`/personInfo/${item.teacher[0].id}`}>{item.teacher[0].name}</Link>,
+                            label: <Link to={`/personInfo/${item.teacher[0]._id}`}>{item.teacher[0].name}</Link>,
                             children: <div>这是内容</div>,
                             extra: <a key={`comment_${item.id}`}>评价</a>
                         }))
