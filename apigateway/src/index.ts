@@ -8,7 +8,54 @@ import { config } from 'dotenv';
 import { mocks } from './mocks';
 import {graphqls2s} from 'graphql-s2s';
 config();
+const toCypherRequire = s => {
+    return s
+    .replaceAll('\#graphql\n','')
+    .replaceAll('\n',',')
+}
+const toFilter = s=>
+    s.replaceAll('\#graphql','')
+    .replaceAll('\n','')
+    .replaceAll(' ','')
 
+const majorReqStr = toCypherRequire(`#graphql
+studyRecords {
+    ... on MajorInRecord {
+        date
+        isAbort
+        major
+        subject {
+            name
+        }
+    }
+}
+`)
+const postClassmatesFilter = toFilter(`#graphql
+{where:{
+AND: [{
+    node:{
+      user: {
+        realpersonConnection: {
+          node:{
+            _on:{
+              Student:{
+                adminClass: {
+                  students_SOME: {
+                    name: "zyc"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    },{
+      node: {
+        policy: "Classmates"
+      }
+    }]
+}}`)
 const preDefs = `#graphql
     directive @customResolver(requires: String!) on FIELD_DEFINITION
     directive @relationship(type: String!, direction:Boolean!) on FIELD_DEFINITION
@@ -17,8 +64,13 @@ const preDefs = `#graphql
     scalar Date
 `
 const typeDefs = graphqls2s.transpileSchema(`#graphql
+    "Generic independent entity type"
+    interface Entity {
+        "system internal id"
+        _id: ID @id
+    }
     "Generic person type"
-    type Person {
+    interface PersonBase implements Entity inherits Entity {
         name: String!
         birth: Date
         age: Int @customResolver(requires: "birth")
@@ -27,6 +79,26 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         "stu/faculty ID"
         id: String!
     }
+    enum VisibilityPolicy {
+        AllUsers,
+        Classmates,
+        Schoolmates,
+        Students,
+        TeacherAndStudents
+    }
+    type Article implements Entity inherits Entity {
+        content: String!
+    }
+    interface Citation @relationshipProperties {
+        "True: to complement; False: to correct"
+        Attitude:Boolean!
+        createdAt: DateTime! @timestamp(operations: [CREATE])
+    }
+    type Identity implements Entity inherits Entity {
+        nickname: String!
+        realperson: PersonBase! @relationship(type:"Owner", direction:OUT)
+    }
+
     type Subject {
         name: String! @unique
         category: String!
@@ -45,16 +117,25 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         date: Date!
     }
     union StudyRecord = MajorInRecord | RepetitionRecord
-    type Student inherits Person {
+
+    "行政班 administrative class"
+    type AdminClass implements Entity inherits Entity {
+        "literal name"
+        name: String!
+        students: [Student!]! @relationship(type:"BelongsTo", direction:IN)
+        head: Teacher! @relationship(type:"HeadOf", direction:IN)
+    }
+    type Student implements PersonBase inherits PersonBase {
         "student id"
         id: String! @unique
         "classes the student has taken"
         classes: [Class!]! @relationship(type:"Takes", direction:OUT)
+        "行政班"
+        adminClass: AdminClass! @relationship(type:"BelongsTo",direction:OUT)
         "学业变更记录"
         studyRecords: [StudyRecord!]! @relationship(type:"HasRecord", direction:OUT)
 
-        # major: Subject! @customResolver(requires: "studyRecords {  }")
-
+        major: Subject! @customResolver(requires: "${majorReqStr}")
         
     }
     enum ProfessionalTitle{
@@ -66,23 +147,27 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         AssisProf,
         Lecturer,
     }
-    type Faculty inherits Person {
-        "faculty id"
-        id: String! @unique
+    interface FacultyBase inherits PersonBase {
         "职务"
         duties: [Duty!]! @relationship(type:"OnBusiness", direction:OUT)
+        # duties: [String!]!
     }
-    union StuOrTeacher = Student | Teacher
+    type Faculty implements FacultyBase & PersonBase inherits FacultyBase {
+        "faculty id"
+        id: String! @unique
+    }
     "研究团队"
-    type ResearchTeam {
+    type ResearchTeam implements Entity inherits Entity {
         name: String!
-        members: [StuOrTeacher!]! @relationship(type:"MemberOf", direction:IN)
+        members: [PersonBase!]! @relationship(type:"MemberOf", direction:IN)
     }
-    type Teacher inherits Faculty {
+    type Teacher implements FacultyBase & PersonBase inherits Faculty {
         "职称"
         title: ProfessionalTitle
         "classes the teacher teaches"
         classes: [Class!]! @relationship(type:"Teaches", direction:OUT)
+        "所指导班级"
+        adminClasses: [AdminClass!]! @relationship(type:"HeadOf", direction:OUT)
 
         "research interests"
         interests: [String!]!
@@ -93,7 +178,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         name: String!
         depart: Department! @relationship(type:"DutyAt", direction:OUT)
     }
-    type Department {
+    type Department implements Entity inherits Entity {
         name: String!
         parent: Department @relationship(type:"SubDepartment", direction:IN)
         subDeparts: Department @relationship(type:"SubDepartment", direction:OUT)
@@ -112,7 +197,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         weekend: Int!
         weekInterval: Int!
     }
-    type College {
+    type College implements Entity inherits Entity {
         name: String! @unique
         courses: [Course!]! @relationship(type:"offeredBy",direction:IN)
     }
@@ -123,7 +208,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         Science,
         SocialScience,
     }
-    interface Course {
+    interface Course implements Entity inherits Entity {
         "ID in whu-jwgl"
         id: String!
         name: String!
@@ -151,10 +236,8 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         id: String! @unique
     }
     union CourseKinds = DepartmentCourse | GeneralCourse | LiberalCourse | PECourse
-    type Query{
-        courses: [CourseKinds!]
-    }
-    type Class {
+    union PersonUnion = Student | Faculty | Teacher
+    type Class implements Entity inherits Entity {
         "ID in whu-jwgl"
         id: String! @unique
         course: Course! @relationship(type:"ClassOf", direction:OUT)
@@ -163,18 +246,52 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         schedule: [Period!]! @relationship(type:"ClassPeriod",direction:OUT)
     }
     # place of information
-    type POI {
-        id: ID! @id @unique
+    type POI implements Entity inherits Entity {
         name: String!
         # GPS pos
         loc: Point
         subPOIs: [POI!]! @relationship(type:"locatedIn",direction:IN)
         parentPOI: POI @relationship(type:"locatedIn",direction:OUT)
     }
-`);
+`) + 
+// graphql-s2s parsing cannot solve following statements
+`#graphql
+type Query{
+        courses: [CourseKinds!] @cypher(
+            statement:"""
+MATCH (n)
+WHERE ANY(label IN labels(n) WHERE label IN ['GeneralCourse', 'DepartmentCourse', 'PECourse'])
+RETURN n""",
+            columnName:"n"
+        )
+        people: [PersonUnion!] @cypher(
+            statement:"""
+MATCH (n)
+WHERE ANY(label IN labels(n) WHERE label IN ['Student', 'Teacher', 'Faculty'])
+RETURN n""",
+            columnName:"n"
+        )
+    }
+    "Generic post type, info platform UGC unit"
+    type Post implements Entity
+    @authorization(filter:[
+        {where:{node:{policy:"AllUsers"}}},
+        ${postClassmatesFilter},
+    ])
+    {
+        user: Identity! @relationship(type: "CreatedBy",direction:OUT)
+        "Post creation time"
+        createdAt: DateTime! @timestamp(operations: [CREATE])
+        content: Entity! @relationship(type: "PostContent", direction:OUT)
+        cite:[Post!]! @relationship(type: "citeOther", direction: OUT, properties: "Citation")
+        policy: VisibilityPolicy!
+        _id: ID @id
+    }
+`
+;
 
 import fs from 'fs'
-import { printSchema } from 'graphql';
+import { printSchema, validate, validateSchema } from 'graphql';
 fs.writeFileSync('schema.graphql',typeDefs)
 
 const ageResolver = (source:{birth:neoDate}) => {
@@ -182,14 +299,24 @@ const ageResolver = (source:{birth:neoDate}) => {
     return now.getFullYear()-source.birth.year.toInt()
 }
 const resolvers = {
-    Person: {
+    Faculty: {
         age: ageResolver
     },
     Teacher: {
         age: ageResolver,
     },
     Student: {
-        age: ageResolver
+        age: ageResolver,
+        major: (node:{studyRecords:[{date:neoDate,major:boolean,isAbort:boolean,subject:any}]})=>{
+            console.log(node.studyRecords)
+            const [record]=node.studyRecords
+            ?.filter(_=>_.major)
+            ?.sort((a,b)=> a.date.toStandardDate()<b.date.toStandardDate()?-1:1 )
+            .slice(-1)
+            console.log(record)
+            if(record.isAbort) throw "MajorInRecord invalid!"
+            return record.subject
+        }
     }
 }
 
@@ -226,14 +353,15 @@ async function start(){
     });
     
     const server = new ApolloServer({
-        // schema: await neoSchema.getSchema(),
-        schema: addMocksToSchema({
-            schema: makeExecutableSchema({
-                typeDefs: printSchema(await neoSchema.getSchema())
-            }),
-            mocks: mocks
-        })
+        schema: await neoSchema.getSchema(),
+        // schema: addMocksToSchema({
+            //     schema: makeExecutableSchema({
+                //         typeDefs: printSchema(await neoSchema.getSchema())
+        //     }),
+        //     mocks: mocks
+        // })
     });
+    neoSchema.assertIndexesAndConstraints({ options: { create: true }});
 
     const { url } = await startStandaloneServer(server, {
         context: async ({ req }) => ({ req }),

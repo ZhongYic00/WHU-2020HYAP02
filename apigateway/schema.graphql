@@ -1,5 +1,43 @@
 
-interface Course { 
+
+#graphql
+"Generic independent entity type"
+interface Entity { 
+    "system internal id"
+    _id: ID @id
+}
+
+"Generic person type"
+interface PersonBase implements Entity { 
+    name: String!
+    birth: Date
+    age: Int @customResolver(requires: "birth")
+    "biogender, 0 for male, 1 for female"
+    gender: Boolean
+    "stu/faculty ID"
+    id: String!
+    "system internal id"
+    _id: ID @id
+}
+interface Citation  @relationshipProperties { 
+    "True: to complement; False: to correct"
+    Attitude: Boolean!
+    createdAt: DateTime! @timestamp(operations: [CREATE])
+}
+interface FacultyBase { 
+    "职务"
+    duties: [Duty!]! @relationship(type:"OnBusiness", direction:OUT)
+    name: String!
+    birth: Date
+    age: Int @customResolver(requires: "birth")
+    "biogender, 0 for male, 1 for female"
+    gender: Boolean
+    "stu/faculty ID"
+    id: String!
+    "system internal id"
+    _id: ID @id
+}
+interface Course implements Entity { 
     "ID in whu-jwgl"
     id: String!
     name: String!
@@ -8,18 +46,19 @@ interface Course {
     prerequisite: [Course!]! @relationship(type:"Requires",direction:OUT)
     advanceCourses: [Course!]! @relationship(type:"Requires",direction:IN)
     classes: [Class!]! @relationship(type:"ClassOf",direction:IN)
+    "system internal id"
+    _id: ID @id
 }
-
-#graphql
-"Generic person type"
-type Person { 
-    name: String!
-    birth: Date
-    age: Int @customResolver(requires: "birth")
-    "biogender, 0 for male, 1 for female"
-    gender: Boolean
-    "stu/faculty ID"
-    id: String!
+type Article implements Entity { 
+    content: String!
+    "system internal id"
+    _id: ID @id
+}
+type Identity implements Entity { 
+    nickname: String!
+    realperson: PersonBase! @relationship(type:"Owner", direction:OUT)
+    "system internal id"
+    _id: ID @id
 }
 type Subject { 
     name: String! @unique
@@ -39,20 +78,35 @@ type MajorInRecord {
 type RepetitionRecord { 
     date: Date!
 }
-type Student { 
+
+"行政班 administrative class"
+type AdminClass implements Entity { 
+    "literal name"
+    name: String!
+    students: [Student!]! @relationship(type:"BelongsTo", direction:IN)
+    head: Teacher! @relationship(type:"HeadOf", direction:IN)
+    "system internal id"
+    _id: ID @id
+}
+type Student implements PersonBase& Entity { 
     "student id"
     id: String! @unique
     "classes the student has taken"
     classes: [Class!]! @relationship(type:"Takes", direction:OUT)
+    "行政班"
+    adminClass: AdminClass! @relationship(type:"BelongsTo",direction:OUT)
     "学业变更记录"
     studyRecords: [StudyRecord!]! @relationship(type:"HasRecord", direction:OUT)
+    major: Subject! @customResolver(requires: "studyRecords {, ... on MajorInRecord {, date, isAbort, major, subject {, name, }, },},")
     name: String!
     birth: Date
     age: Int @customResolver(requires: "birth")
     "biogender, 0 for male, 1 for female"
     gender: Boolean
+    "system internal id"
+    _id: ID @id
 }
-type Faculty { 
+type Faculty implements FacultyBase& PersonBase& Entity { 
     "faculty id"
     id: String! @unique
     "职务"
@@ -62,18 +116,24 @@ type Faculty {
     age: Int @customResolver(requires: "birth")
     "biogender, 0 for male, 1 for female"
     gender: Boolean
+    "system internal id"
+    _id: ID @id
 }
 
 "研究团队"
-type ResearchTeam { 
+type ResearchTeam implements Entity { 
     name: String!
-    members: [StuOrTeacher!]! @relationship(type:"MemberOf", direction:IN)
+    members: [PersonBase!]! @relationship(type:"MemberOf", direction:IN)
+    "system internal id"
+    _id: ID @id
 }
-type Teacher { 
+type Teacher implements FacultyBase& PersonBase& Entity { 
     "职称"
     title: ProfessionalTitle
     "classes the teacher teaches"
     classes: [Class!]! @relationship(type:"Teaches", direction:OUT)
+    "所指导班级"
+    adminClasses: [AdminClass!]! @relationship(type:"HeadOf", direction:OUT)
     "research interests"
     interests: [String!]!
     "research teams"
@@ -87,15 +147,19 @@ type Teacher {
     age: Int @customResolver(requires: "birth")
     "biogender, 0 for male, 1 for female"
     gender: Boolean
+    "system internal id"
+    _id: ID @id
 }
 type Duty { 
     name: String!
     depart: Department! @relationship(type:"DutyAt", direction:OUT)
 }
-type Department { 
+type Department implements Entity { 
     name: String!
     parent: Department @relationship(type:"SubDepartment", direction:IN)
     subDeparts: Department @relationship(type:"SubDepartment", direction:OUT)
+    "system internal id"
+    _id: ID @id
 }
 
 "Repetition unit of each class"
@@ -112,13 +176,15 @@ type Period {
     weekend: Int!
     weekInterval: Int!
 }
-type College { 
+type College implements Entity { 
     name: String! @unique
     courses: [Course!]! @relationship(type:"offeredBy",direction:IN)
+    "system internal id"
+    _id: ID @id
 }
 
 "专业课"
-type DepartmentCourse implements Course { 
+type DepartmentCourse implements Course& Entity { 
     id: String! @unique
     name: String!
     "开课学院"
@@ -126,10 +192,12 @@ type DepartmentCourse implements Course {
     prerequisite: [Course!]! @relationship(type:"Requires",direction:OUT)
     advanceCourses: [Course!]! @relationship(type:"Requires",direction:IN)
     classes: [Class!]! @relationship(type:"ClassOf",direction:IN)
+    "system internal id"
+    _id: ID @id
 }
 
 "公共课"
-type GeneralCourse implements Course { 
+type GeneralCourse implements Course& Entity { 
     id: String! @unique
     name: String!
     "开课学院"
@@ -137,10 +205,12 @@ type GeneralCourse implements Course {
     prerequisite: [Course!]! @relationship(type:"Requires",direction:OUT)
     advanceCourses: [Course!]! @relationship(type:"Requires",direction:IN)
     classes: [Class!]! @relationship(type:"ClassOf",direction:IN)
+    "system internal id"
+    _id: ID @id
 }
 
 "通识课"
-type LiberalCourse implements Course { 
+type LiberalCourse implements Course& Entity { 
     id: String! @unique
     type: HASSType
     name: String!
@@ -149,10 +219,12 @@ type LiberalCourse implements Course {
     prerequisite: [Course!]! @relationship(type:"Requires",direction:OUT)
     advanceCourses: [Course!]! @relationship(type:"Requires",direction:IN)
     classes: [Class!]! @relationship(type:"ClassOf",direction:IN)
+    "system internal id"
+    _id: ID @id
 }
 
 "体育课"
-type PECourse implements Course { 
+type PECourse implements Course& Entity { 
     id: String! @unique
     name: String!
     "开课学院"
@@ -160,27 +232,36 @@ type PECourse implements Course {
     prerequisite: [Course!]! @relationship(type:"Requires",direction:OUT)
     advanceCourses: [Course!]! @relationship(type:"Requires",direction:IN)
     classes: [Class!]! @relationship(type:"ClassOf",direction:IN)
+    "system internal id"
+    _id: ID @id
 }
-type Query { 
-    courses: [CourseKinds!]
-}
-type Class { 
+type Class implements Entity { 
     "ID in whu-jwgl"
     id: String! @unique
     course: Course! @relationship(type:"ClassOf", direction:OUT)
     teacher: [Teacher!]! @relationship(type:"Teaches", direction:IN)
     position: POI
     schedule: [Period!]! @relationship(type:"ClassPeriod",direction:OUT)
+    "system internal id"
+    _id: ID @id
 }
 
 # place of information
-type POI { 
-    id: ID! @id @unique
+type POI implements Entity { 
     name: String!
     # GPS pos
     loc: Point
     subPOIs: [POI!]! @relationship(type:"locatedIn",direction:IN)
     parentPOI: POI @relationship(type:"locatedIn",direction:OUT)
+    "system internal id"
+    _id: ID @id
+}
+enum VisibilityPolicy { 
+    AllUsers
+    Classmates
+    Schoolmates
+    Students
+    TeacherAndStudents
 }
 enum ProfessionalTitle { 
     "Full Professor"
@@ -200,5 +281,36 @@ enum HASSType {
     SocialScience
 }
 union StudyRecord = MajorInRecord | RepetitionRecord  
-union StuOrTeacher = Student | Teacher  
 union CourseKinds = DepartmentCourse | GeneralCourse | LiberalCourse | PECourse  
+union PersonUnion = Student | Faculty | Teacher  #graphql
+type Query{
+        courses: [CourseKinds!] @cypher(
+            statement:"""
+MATCH (n)
+WHERE ANY(label IN labels(n) WHERE label IN ['GeneralCourse', 'DepartmentCourse', 'PECourse'])
+RETURN n""",
+            columnName:"n"
+        )
+        people: [PersonUnion!] @cypher(
+            statement:"""
+MATCH (n)
+WHERE ANY(label IN labels(n) WHERE label IN ['Student', 'Teacher', 'Faculty'])
+RETURN n""",
+            columnName:"n"
+        )
+    }
+    "Generic post type, info platform UGC unit"
+    type Post implements Entity
+    @authorization(filter:[
+        {where:{node:{policy:"AllUsers"}}},
+        {where:{AND:[{node:{user:{realpersonConnection:{node:{_on:{Student:{adminClass:{students_SOME:{name:"zyc"}}}}}}}}},{node:{policy:"Classmates"}}]}},
+    ])
+    {
+        user: Identity! @relationship(type: "CreatedBy",direction:OUT)
+        "Post creation time"
+        createdAt: DateTime! @timestamp(operations: [CREATE])
+        content: Entity! @relationship(type: "PostContent", direction:OUT)
+        cite:[Post!]! @relationship(type: "citeOther", direction: OUT, properties: "Citation")
+        policy: VisibilityPolicy!
+        _id: ID @id
+    }
