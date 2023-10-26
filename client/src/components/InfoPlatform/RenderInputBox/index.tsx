@@ -1,4 +1,4 @@
-import { gql, useQuery } from '@apollo/client';
+import { gql, useMutation, useQuery } from '@apollo/client';
 import React, { Key, useState } from 'react';
 import {
   ProForm,
@@ -35,6 +35,18 @@ const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
   const enumValues = data?.__type?.enumValues;
   console.log(enumValues);
   return (
+    <ProFormSelect
+      options={
+        enumValues?.map((item,index)=>(item.name))
+      }
+      fieldProps={{
+        defaultValue:enumValues && enumValues[0].name
+      }}
+      name={fieldName}
+      label={fieldName}
+    ></ProFormSelect>
+  )
+  return (
     <div>
     <Row>
       <Col span={2}>
@@ -44,6 +56,7 @@ const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
         <Select
           defaultValue={0}
           style={{width:150}}
+          // onChange={(value)=>}
           options={
             enumValues && enumValues.map((item, index) => ({
               value: index,
@@ -112,6 +125,16 @@ const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id, queryFie
   //   }
   // }
   // `;
+  const upload=gql`
+mutation CreatePosts($input: [PostCreateInput!]!) {
+createPosts(input: $input) {
+info {
+nodesCreated
+}
+}
+}
+  `
+  const [uploadTeacher]=useMutation(upload)
   
   return (
   <div>
@@ -126,7 +149,36 @@ const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id, queryFie
               </Col>
             </Row>
           );
-        },
+        }
+      }}
+      onFinish={async (values) => {
+        console.log(values);
+        uploadTeacher({
+          variables:{
+            input:[{
+              policy: 'AllUsers',
+              user: {
+                connect: {
+                  where: {
+                    node: {
+                      nickname: 'rubbish'
+                    }
+                  }
+                }
+              },
+              content: {
+                create: {
+                  node: {
+                    [schemaName]: {
+                      ...values,
+                      // interests: []
+                    }
+                  }
+                }
+              }
+            }]
+          }
+        })
       }}
       isKeyPressSubmit = {true}
     >
@@ -161,13 +213,13 @@ const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id, queryFie
         }
         else if(nowItem?.type?.name == "Date") {
           return (
-            <ProFormDatePicker name="date" label={item.name} />
+            <ProFormDatePicker name={item.name} label={item.name} />
           )
         }
-        else {
+        else if(item.name!='_id' && item.name!='age'){
           return (
             <ProFormText
-              name={index}
+              name={item.name}
               label={item.name}
               placeholder="请输入"
             />
@@ -190,7 +242,7 @@ const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id, queryFie
       else{
         return (
           <ProFormText
-            name={index}
+            name={item.name}
             label={item.name}
             placeholder="请输入"
           />

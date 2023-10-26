@@ -5,13 +5,15 @@ import React, { Key, useState } from 'react';
 import { PageContainer } from '@ant-design/pro-components';
 // import RenderInputBox from '../../components/InfoPlatform/index';
 import RenderInputBox from '../../components/InfoPlatform/RenderInputBox/index'
+import { Select } from 'antd';
 
 export default () => {
     return (
         <PageContainer>
             {/* <RenderInputBox schemaName="Teacher"></RenderInputBox> */}
             <RenderInputBox 
-                schemaName='Teacher' 
+                schemaName='Article'
+                // schemaName='Teacher'
                 id='2020302192187'
                 queryFields='teachers'
             ></RenderInputBox>
