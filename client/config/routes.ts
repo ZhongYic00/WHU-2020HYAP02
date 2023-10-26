@@ -85,5 +85,10 @@ export default [
   {
     path:'/MyInfo/update',
     component:'./MyInfo/Update'
+  },
+  {
+    path:'/Posts',
+    component:'./Posts',
+    name:'信息平台浏览'
   }
 ];
