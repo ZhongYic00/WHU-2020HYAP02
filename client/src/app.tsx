@@ -3,15 +3,32 @@ import { LinkOutlined } from '@ant-design/icons';
 import type { Settings as LayoutSettings } from '@ant-design/pro-components';
 import { SettingDrawer } from '@ant-design/pro-components';
 import type { RunTimeLayoutConfig } from '@umijs/max';
-import { history, Link } from '@umijs/max';
+import { history, Link, useModel } from '@umijs/max';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 import { currentUser as queryCurrentUser } from '@/services/ant-design-pro/api';
 import React from 'react';
-import { ApolloProvider, ApolloClient, InMemoryCache } from '@apollo/client';
+import { ApolloProvider, ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
+import { GraphQLSchema, buildClientSchema,getIntrospectionQuery } from 'graphql';
 
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
+
+const cache = new InMemoryCache();
+const client = new ApolloClient({
+  uri: 'http://localhost:4000',
+  cache: cache,
+})
+
+const initSchema = async () => {
+  const introspQuery = gql`${getIntrospectionQuery()}`
+  const resp = await client.query({
+    query: introspQuery,
+  })
+  const clientSchema = buildClientSchema(resp.data)
+  console.log(clientSchema)
+  return clientSchema
+}
 
 /**
  * @see  https://umijs.org/zh-CN/plugins/plugin-initial-state
@@ -21,6 +38,7 @@ export async function getInitialState(): Promise<{
   currentUser?: API.CurrentUser;
   loading?: boolean;
   fetchUserInfo?: () => Promise<API.CurrentUser | undefined>;
+  clientSchema?: GraphQLSchema;
 }> {
   const fetchUserInfo = async () => {
     try {
@@ -33,6 +51,12 @@ export async function getInitialState(): Promise<{
     }
     return undefined;
   };
+  let clientSchema:GraphQLSchema|undefined
+  try {
+    clientSchema = await initSchema()
+  } catch(e){
+    console.error(e)
+  }
   // 如果不是登录页面，执行
   const { location } = history;
   if (location.pathname !== loginPath) {
@@ -41,11 +65,13 @@ export async function getInitialState(): Promise<{
       fetchUserInfo,
       currentUser,
       settings: defaultSettings as Partial<LayoutSettings>,
+      clientSchema
     };
   }
   return {
     fetchUserInfo,
     settings: defaultSettings as Partial<LayoutSettings>,
+    clientSchema,
   };
 }
 
@@ -137,12 +163,6 @@ export const request = {
   ...errorConfig,
 };
 
-
-const cache = new InMemoryCache();
-const client = new ApolloClient({
-  uri: 'http://localhost:4000',
-  cache: cache,
-})
 
 export const rootContainer = (container) => {
   return (<ApolloProvider client={client}>
