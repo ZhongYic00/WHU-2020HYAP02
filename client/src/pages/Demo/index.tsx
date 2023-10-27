@@ -1,3 +1,4 @@
+import Filter from '@/components/InfoPlatform/Filter';
 import { PageContainer, ProList, ProCard } from '@ant-design/pro-components';
 import { gql, useQuery } from '@apollo/client';
 import { useModel } from '@umijs/max';
@@ -67,6 +68,7 @@ const Demo: React.FC = () => {
   const [expandedRowKeys, setExpandedRowKeys] = useState<readonly Key[]>([]);
   return (
     <PageContainer>
+      <Filter />
         {data && data['students'] &&
         [(<ProList<{ title: string }>
           rowKey="id"
