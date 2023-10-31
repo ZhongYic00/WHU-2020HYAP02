@@ -14,6 +14,8 @@ import {
 import { Col, message, Row, Space, Select, Radio } from 'antd';
 import type { FormLayout } from 'antd/lib/form/Form';
 import { ReadOutlined } from '@ant-design/icons';
+import { useModel } from '@umijs/max';
+import { GraphQLNonNull, GraphQLInputObjectType, GraphQLInputType, GraphQLScalarType, GraphQLList, GraphQLObjectType, GraphQLType, GraphQLEnumType } from 'graphql';
 
 type RenderEnumBoxProps={
   enumName: string
@@ -37,7 +39,7 @@ const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
   return (
     <ProFormSelect
       options={
-        enumValues?.map((item,index)=>(item.name))
+        enumValues?.map((item,index)=>(name))
       }
       fieldProps={{
         defaultValue:enumValues && enumValues[0].name
@@ -60,7 +62,7 @@ const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
           options={
             enumValues && enumValues.map((item, index) => ({
               value: index,
-              label: item.name
+              label: name
             }))
           }
         />
@@ -78,53 +80,29 @@ export type RenderInputBoxProps={
 }
 
 const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id, queryFields}) => {
-  const query_field=gql`
-  query($schemaName:String!) {
-    __type(name:$schemaName){
-      fields{
-        name
-        type{
-          kind
-          name
-          ofType {
-            kind
-            name
-            ofType {
-              kind
-              name
-              ofType {
-                kind
-                name
-                ofType {
-                  kind
-                  name
-                }
-              }
-            }
-          }
-        }
-      }
+  const {initialState} = useModel("@@initialState");
+  const schema = initialState?.clientSchema;
+  const inputType=schema?.getType(`${schemaName}CreateInput`) as GraphQLInputObjectType
+  const fields=inputType.getFields()
+  const type=schema?.getType(schemaName) as GraphQLObjectType
+  // const fields=type.getFields()
+  const unwrapList = (type:GraphQLType)=>{
+    let list=false
+    console.log('unwrap',type)
+    while(!(type instanceof GraphQLScalarType||type instanceof GraphQLObjectType||type instanceof GraphQLInputObjectType||type instanceof GraphQLEnumType)){
+      type=type.ofType
+      list||=type instanceof GraphQLList
     }
+    return [list,type]
   }
-  `;
-  
-  const {data,error} = useQuery(query_field,{variables:{schemaName:schemaName}});
-  console.log(data);
-  const schemaFields = data?.__type.fields.slice();
-  console.log(schemaFields);
+  const inputs:[string,boolean,boolean,GraphQLObjectType|GraphQLScalarType|GraphQLEnumType][]=Object.entries(fields)
+  .map(([str,field])=>{
+    let mustfill=field.type instanceof GraphQLNonNull
+    const [listInput,leafType]=unwrapList(type.getFields()[field.name].type)
+    return [field.name,mustfill,listInput,leafType]
+  })
+  console.log(schemaName,'Input',inputType,inputs)
 
-  // const fieldsArray = schemaFields?.map((field) => field.name);
-  // const fieldsString = fieldsArray?.join('\n');
-
-  // console.log(fieldsString);
-
-  // const query_data=gql`
-  // query($id:String!) {
-  //   ${queryFields} (where: {id: $id}) {
-      
-  //   }
-  // }
-  // `;
   const upload=gql`
 mutation CreatePosts($input: [PostCreateInput!]!) {
 createPosts(input: $input) {
@@ -134,7 +112,7 @@ nodesCreated
 }
 }
   `
-  const [uploadTeacher]=useMutation(upload)
+  const [uploadObject]=useMutation(upload)
   
   return (
   <div>
@@ -153,7 +131,7 @@ nodesCreated
       }}
       onFinish={async (values) => {
         console.log(values);
-        uploadTeacher({
+        uploadObject({
           variables:{
             input:[{
               policy: 'AllUsers',
@@ -182,24 +160,17 @@ nodesCreated
       }}
       isKeyPressSubmit = {true}
     >
-    {schemaFields && schemaFields.map((item, index) => {
-      const nowItem = {...item} as { -readonly [K in keyof typeof item]: typeof item[K]};
-      while(nowItem?.type?.kind == "NON_NULL") {
-        nowItem.type = nowItem?.type?.ofType;
-      }
-      if (nowItem?.type?.kind == "LIST") {
-        while(nowItem?.type?.kind == "NON_NULL") {
-          nowItem.type = nowItem?.type?.ofType;
-        }
-        // TODO
-      }
-      else if(nowItem?.type?.kind == "SCALAR") {
-        if(nowItem?.type?.name == "Boolean") {
+    {inputs && inputs.map((item,index)=>{
+    // schemaFields && schemaFields.map((item, index) => {
+      // const nowItem = {...item} as { -readonly [K in keyof typeof item]: typeof item[K]};
+      const [name,nullable,isList,leafType]=item
+      if(leafType instanceof GraphQLScalarType) {
+        if(leafType.name == "Boolean") {
           return (
             <div>
             <Row>
               <Col span={2}>
-                <p>{item?.name}: </p>
+                <p>{name}: </p>
               </Col>
               <Col>
                 <Radio.Group name="genderGroup" defaultValue={1}>
@@ -211,42 +182,34 @@ nodesCreated
             </div>
           )
         }
-        else if(nowItem?.type?.name == "Date") {
+        else if(leafType.name == "Date") {
           return (
-            <ProFormDatePicker name={item.name} label={item.name} />
+            <ProFormDatePicker name={name} label={name} />
           )
         }
-        else if(item.name!='_id' && item.name!='age'){
+        else if(name!='_id' && name!='age'){
           return (
             <ProFormText
-              name={item.name}
-              label={item.name}
+              name={name}
+              label={name}
               placeholder="请输入"
             />
           )
         }
       }
-      else if(nowItem?.type?.kind == "ENUM") {
+      else if(leafType instanceof GraphQLEnumType) {
         return (
           <RenderEnumBox 
-            fieldName={nowItem?.name}
-            enumName={nowItem?.type?.name} 
+            fieldName={name}
+            enumName={leafType?.name} 
           />
         )
       }
-      else if(nowItem?.type?.kind == "OBJECT") {
-        // 总结规律发现所有有用的对象型都由LIST包裹，因此直接为对象型的抛弃
-        // console.log("object", nowItem?.name);
-        // do nothing
+      else if(leafType instanceof GraphQLObjectType) {
+        return <p>todo: render {leafType.name} chooser</p>
       }
       else{
-        return (
-          <ProFormText
-            name={item.name}
-            label={item.name}
-            placeholder="请输入"
-          />
-        )
+        return <p>ERROR: type not considered:{JSON.stringify(item)}</p>
       }
 
       })
