@@ -161,73 +161,73 @@ nodesCreated
       }}
       isKeyPressSubmit = {true}
     >
-      <ProFormList
-          name="labels"
-          creatorButtonProps={{
-            position: 'bottom',
-            creatorButtonText: '+',
-          }}
-          deleteIconProps={{
-            Icon: CloseCircleOutlined,
-            tooltipText: '删除这行',
-          }}
-          min={1}
-      >
-        {inputs && inputs.map((item,index)=>{
-        // schemaFields && schemaFields.map((item, index) => {
-          // const nowItem = {...item} as { -readonly [K in keyof typeof item]: typeof item[K]};
-          const [name,nullable,isList,leafType]=item
-          if(leafType instanceof GraphQLScalarType) {
-            if(leafType.name == "Boolean") {
-              return (
-                <div>
-                <Row>
-                  <Col span={2}>
-                    <p>{name}: </p>
-                  </Col>
-                  <Col>
-                    <Radio.Group name="genderGroup" defaultValue={1}>
-                      <Radio value={1}>男</Radio>
-                      <Radio value={2}>女</Radio>
-                    </Radio.Group>              
-                  </Col>
-                </Row>
-                </div>
-              )
-            }
-            else if(leafType.name == "Date") {
-              return (
-                <ProFormDatePicker name={name} label={name} />
-              )
-            }
-            else if(name!='_id' && name!='age'){
-              return (
-                <ProFormText
-                  name={name}
-                  label={name}
-                  placeholder="请输入"
-                />
-              )
-            }
-          }
-          else if(leafType instanceof GraphQLEnumType) {
-            return (
-              <RenderEnumBox 
-                fieldName={name}
-                enumName={leafType?.name} 
-              />
-            )
-          }
-          else if(leafType instanceof GraphQLObjectType) {
-            return <p>todo: render {leafType.name} chooser</p>
-          }
-          else{
-            return <p>ERROR: type not considered:{JSON.stringify(item)}</p>
-          }
-
-          })
+    {inputs && inputs.map((item,index)=>{
+    // schemaFields && schemaFields.map((item, index) => {
+      // const nowItem = {...item} as { -readonly [K in keyof typeof item]: typeof item[K]};
+      const [name,nullable,isList,leafType]=item
+      if(leafType instanceof GraphQLScalarType) {
+        if(leafType.name == "Boolean") {
+          return (
+            <div>
+            <Row>
+              <Col span={2}>
+                <p>{name}: </p>
+              </Col>
+              <Col>
+                <Radio.Group name="genderGroup" defaultValue={1}>
+                  <Radio value={1}>男</Radio>
+                  <Radio value={2}>女</Radio>
+                </Radio.Group>              
+              </Col>
+            </Row>
+            </div>
+          )
         }
-      </ProFormList>
+        else if(leafType.name == "Date") {
+          return (
+            <ProFormDatePicker name={name} label={name} />
+          )
+        }
+        else if(name!='_id' && name!='age'){
+          return (
+            <ProFormList
+                name="labels"
+                creatorButtonProps={{
+                  position: 'bottom',
+                  creatorButtonText: '+',
+                }}
+                deleteIconProps={{
+                  Icon: CloseCircleOutlined,
+                  tooltipText: '删除这行',
+                }}
+                min={1}
+            >
+              <ProFormText
+                name={name}
+                label={name}
+                placeholder="请输入"
+              />
+            </ProFormList>
+          )
+        }
+      }
+      else if(leafType instanceof GraphQLEnumType) {
+        return (
+          <RenderEnumBox 
+            fieldName={name}
+            enumName={leafType?.name} 
+          />
+        )
+      }
+      else if(leafType instanceof GraphQLObjectType) {
+        return <p>todo: render {leafType.name} chooser</p>
+      }
+      else{
+        return <p>ERROR: type not considered:{JSON.stringify(item)}</p>
+      }
+
+      })
+    }
     </ProForm>
   </div>
   )
