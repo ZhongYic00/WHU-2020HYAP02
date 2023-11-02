@@ -84,7 +84,7 @@ const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id, queryFie
   const {initialState} = useModel("@@initialState");
   const schema = initialState?.clientSchema;
   const inputType=schema?.getType(`${schemaName}CreateInput`) as GraphQLInputObjectType
-  const fields=inputType.getFields()
+  const fields=inputType?.getFields()
   const type=schema?.getType(schemaName) as GraphQLObjectType
   // const fields=type.getFields()
   const unwrapList = (type:GraphQLType)=>{
