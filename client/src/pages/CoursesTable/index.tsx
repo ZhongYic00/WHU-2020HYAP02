@@ -236,12 +236,12 @@ export default () => {
               },
               content: {
                 search: false,
-                // render: (_, record) => (
-                //   <div>
-                //     <div style={{display: 'inline-block', width: '100px'}}>评分：{(record.rating).toFixed(1)}/10</div>
-                //     <div style={{display: 'inline-block'}}>基于{record.comment}条评价</div>
-                //   </div>
-                // ),
+                render: (_, record) => (
+                  <div>
+                    <div style={{display: 'inline-block', width: '100px'}}>评分：{(record.rating).toFixed(1)}/10</div>
+                    <div style={{display: 'inline-block'}}>基于{record.comment}条评价</div>
+                  </div>
+                ),
               },
               actions: {
                 
