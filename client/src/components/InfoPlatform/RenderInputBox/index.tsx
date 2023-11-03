@@ -191,7 +191,8 @@ nodesCreated
         else if(name!='_id' && name!='age'){
           return (
             <ProFormList
-                name="labels"
+                name={name}
+                label={name}
                 initialValue={[
                   {
                     name: '请输入',
@@ -201,11 +202,13 @@ nodesCreated
                   position: 'bottom',
                   creatorButtonText: '新增一行',
                 }}
+                creatorRecord={{
+                  name: '请输入',
+                }}
                 min={1}
             >
               <ProFormText
-                name={name}
-                label={name}
+                name="name"
                 placeholder="请输入"
               />
             </ProFormList>
