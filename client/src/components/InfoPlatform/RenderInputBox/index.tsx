@@ -194,8 +194,8 @@ nodesCreated
                 name="labels"
                 initialValue={[
                   {
-                    name: '请输入'
-                  }
+                    name: '请输入',
+                  },
                 ]}
                 creatorButtonProps={{
                   position: 'bottom',
