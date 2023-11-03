@@ -192,13 +192,14 @@ nodesCreated
           return (
             <ProFormList
                 name="labels"
+                initialValue={[
+                  {
+                    name: '请输入'
+                  }
+                ]}
                 creatorButtonProps={{
                   position: 'bottom',
-                  creatorButtonText: '+',
-                }}
-                deleteIconProps={{
-                  Icon: CloseCircleOutlined,
-                  tooltipText: '删除这行',
+                  creatorButtonText: '新增一行',
                 }}
                 min={1}
             >
