@@ -92,6 +92,11 @@ export default [
     name:'信息平台浏览'
   },
   {
+    path:'/Browse',
+    component:'./Browse',
+    name:'评价浏览'
+  },
+  {
     path:'/view/:type/:id',
     component:'./Viewer',
   }
