@@ -242,7 +242,7 @@ nodesCreated
                   label={name}
                   initialValue={[
                     {
-                      name: '请输入',
+                      [name]: '请输入',
                     },
                   ]}
                   creatorButtonProps={{
@@ -250,12 +250,12 @@ nodesCreated
                     creatorButtonText: '新增一行',
                   }}
                   creatorRecord={{
-                    name: '请输入',
+                    [name]: '请输入',
                   }}
                   min={1}
               >
                 <ProFormText
-                  name="name"
+                  name={name}
                   label={name}
                   placeholder="请输入"
                 />
