@@ -12,8 +12,8 @@ export default () => {
         <PageContainer>
             {/* <RenderInputBox schemaName="Teacher"></RenderInputBox> */}
             <RenderInputBox 
-                schemaName='Article'
-                // schemaName='Teacher'
+                // schemaName='Article'
+                schemaName='Teacher'
                 id='2020302192187'
                 queryFields='teachers'
             ></RenderInputBox>

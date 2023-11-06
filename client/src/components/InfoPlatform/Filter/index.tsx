@@ -22,6 +22,7 @@ const basicField=(Object.entries({
 const date2str = (d:{year:string,month:string,day:string}) => `${d.year}-${d.month}-${d.day}`
 export type FilterProps = {
     typename?:string,
+    setWhere:(w:any)=>void,
 }
 class NodeInput{
     constructor(field,label,type){
@@ -150,9 +151,10 @@ const FilterNode: React.FC<{
     </Card>
 }
 
-const Filter: React.FC<FilterProps> = ({typename="Teacher"}) => {
+const Filter: React.FC<FilterProps> = ({typename="Teacher",setWhere}) => {
+    console.log('Filter',typename)
     const {initialState} = useModel("@@initialState");
-    // console.log(initialState?.clientSchema)
+    console.log(initialState?.clientSchema)
     const schema = initialState?.clientSchema
     const whereType = schema?.getType(`${typename}Where`) as GraphQLInputObjectType
     console.log(whereType)
@@ -167,12 +169,15 @@ const Filter: React.FC<FilterProps> = ({typename="Teacher"}) => {
     })
     // console.log('where:',whereType,avaiNodes)
     
-    const [filterAST,setFilterAST] = useState<AST>(OR)
+    const [filterAST,setFilterAST] = useState<AST>(AND)
     const availNodes=avaiNodes.map(n=>new NodeInput(n[1],n[1].name.replace('_CONTAINS',''),(n[1].type as GraphQLScalarType).name) )
     const traverse=(node:AST)=>{
         console.log('traverse',node,['AND','OR'].includes(node.type))
         if(['AND','OR'].includes(node.type))
-            return {[node.type]:node.subs.map((n,i)=>traverse(n))}
+            return {[node.type]: node.subs.length?
+            node.subs.map((n,i)=>traverse(n))
+            : null
+        }
         const extractVal=(nd)=>{
             switch(nd.type){
                 case 'String': return (nd.ref.current as unknown as InputRef).input?.value
@@ -194,6 +199,7 @@ const Filter: React.FC<FilterProps> = ({typename="Teacher"}) => {
                 onClick={()=>{
                     const wherepattern=traverse(filterAST)
                     console.log(wherepattern)
+                    setWhere(wherepattern)
                 }}
             >
                 Search

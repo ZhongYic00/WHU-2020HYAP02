@@ -11,15 +11,32 @@ import {
   ProFormText,
   ProFormTextArea,
 } from '@ant-design/pro-components';
-import { Col, message, Row, Space, Select, Radio } from 'antd';
+import { Col, message, Row, Space, Select, Radio, Modal, Button } from 'antd';
 import type { FormLayout } from 'antd/lib/form/Form';
 import { ReadOutlined } from '@ant-design/icons';
-import { useModel } from '@umijs/max';
+import { Link, useModel } from '@umijs/max';
 import { GraphQLNonNull, GraphQLInputObjectType, GraphQLInputType, GraphQLScalarType, GraphQLList, GraphQLObjectType, GraphQLType, GraphQLEnumType } from 'graphql';
+import { KeepAlive } from '@umijs/max';
+import Filter from '../Filter';
+import { ObjectList } from '../ObjectList';
 
 type RenderEnumBoxProps={
   enumName: string
   fieldName: string
+}
+
+const ClassChooser:React.FC<{typename:string}>=({typename})=>{
+  const [open,setOpen]=useState(false);
+  const [where,setWhere]=useState({});
+  return <>
+    <Button type="primary" onClick={()=>setOpen(true)}>Choose {typename}</Button>
+    <Modal
+      open={open}
+    >
+      <Filter typename={typename} setWhere={setWhere} />
+      <ObjectList typename={typename} where={where} />
+    </Modal>
+  </>
 }
 
 const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
@@ -115,7 +132,7 @@ nodesCreated
   const [uploadObject]=useMutation(upload)
   
   return (
-  <div>
+  <KeepAlive>
     <ProForm
       layout = "horizontal"
       submitter={{
@@ -206,7 +223,8 @@ nodesCreated
         )
       }
       else if(leafType instanceof GraphQLObjectType) {
-        return <p>todo: render {leafType.name} chooser</p>
+        const [open,setOpen]=useState(false)
+        return <ClassChooser typename={leafType.name}/>
       }
       else{
         return <p>ERROR: type not considered:{JSON.stringify(item)}</p>
@@ -215,7 +233,7 @@ nodesCreated
       })
     }
     </ProForm>
-  </div>
+  </KeepAlive>
   )
 }
 
