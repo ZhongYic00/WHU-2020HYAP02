@@ -28,7 +28,7 @@ type RenderEnumBoxProps={
 const ClassChooser:React.FC<{
   typename:string,
   value?: string,
-  onChange?: (value: string) => void,
+  onChange?: (value: any) => void,
 }>=({typename,value,onChange})=>{
   const [open,setOpen]=useState(false);
   const [where,setWhere]=useState({});
@@ -39,7 +39,7 @@ const ClassChooser:React.FC<{
     <Modal
       open={open}
       onOk={()=>{
-        id && onChange?.(id)
+        id && onChange?.({where:{node:{_id:id}}})
         setOpen(false)
       }}
       onCancel={()=>setOpen(false)}
@@ -158,7 +158,7 @@ nodesCreated
         }
       }}
       onFinish={async (values) => {
-        console.log(values);
+        console.log('form values',values);
         uploadObject({
           variables:{
             input:[{
