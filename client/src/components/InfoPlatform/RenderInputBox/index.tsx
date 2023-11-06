@@ -11,7 +11,7 @@ import {
   ProFormText,
   ProFormTextArea,
 } from '@ant-design/pro-components';
-import { Col, message, Row, Space, Select, Radio, Modal, Button } from 'antd';
+import { Col, message, Row, Space, Select, Radio, Modal, Button, Form } from 'antd';
 import type { FormLayout } from 'antd/lib/form/Form';
 import { ReadOutlined } from '@ant-design/icons';
 import { Link, useModel } from '@umijs/max';
@@ -25,18 +25,29 @@ type RenderEnumBoxProps={
   fieldName: string
 }
 
-const ClassChooser:React.FC<{typename:string}>=({typename})=>{
+const ClassChooser:React.FC<{
+  typename:string,
+  value?: string,
+  onChange?: (value: string) => void,
+}>=({typename,value,onChange})=>{
   const [open,setOpen]=useState(false);
   const [where,setWhere]=useState({});
-  return <>
+  const [id,setId]=useState<string>();
+  return <span>
+    {id && <p>{id}</p>}
     <Button type="primary" onClick={()=>setOpen(true)}>Choose {typename}</Button>
     <Modal
       open={open}
+      onOk={()=>{
+        id && onChange?.(id)
+        setOpen(false)
+      }}
+      onCancel={()=>setOpen(false)}
     >
       <Filter typename={typename} setWhere={setWhere} />
-      <ObjectList typename={typename} where={where} />
+      <ObjectList typename={typename} where={where} onChange={setId}/>
     </Modal>
-  </>
+  </span>
 }
 
 const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
@@ -224,7 +235,9 @@ nodesCreated
       }
       else if(leafType instanceof GraphQLObjectType) {
         const [open,setOpen]=useState(false)
-        return <ClassChooser typename={leafType.name}/>
+        return <Form.Item name={name} label={name}>
+          <ClassChooser typename={leafType.name}/>
+        </Form.Item>
       }
       else{
         return <p>ERROR: type not considered:{JSON.stringify(item)}</p>
