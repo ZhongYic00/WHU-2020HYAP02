@@ -10,6 +10,14 @@ import { currentUser as queryCurrentUser } from '@/services/ant-design-pro/api';
 import React from 'react';
 import { ApolloProvider, ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
 import { GraphQLSchema, buildClientSchema,getIntrospectionQuery } from 'graphql';
+import { autoFixContext } from 'react-activation';
+import jsxRuntime from 'react/jsx-runtime'
+import jsxDevRuntime from 'react/jsx-dev-runtime'
+ 
+autoFixContext(
+  [jsxRuntime, 'jsx', 'jsxs', 'jsxDEV'],
+  [jsxDevRuntime, 'jsx', 'jsxs', 'jsxDEV']
+) 
 
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
