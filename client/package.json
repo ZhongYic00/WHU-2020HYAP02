@@ -50,6 +50,7 @@
     "@ant-design/pro-components": "^2.6.13",
     "@ant-design/use-emotion-css": "1.0.4",
     "@apollo/client": "^3.8.4",
+    "@pansy/react-amap": "^2.16.0",
     "@umijs/route-utils": "^2.2.2",
     "antd": "^5.8.4",
     "classnames": "^2.3.2",
