@@ -226,7 +226,7 @@ export default () => {
                             key: index,
                             label: <Link to={`/personInfo/${item.teacher[0]._id}`}>{item.teacher[0].name}</Link>,
                             children: <div>这是内容</div>,
-                            extra: <a key={`comment_${item.id}`}>评价</a>
+                            extra: <Link to={`/Browse`}>评价</Link>
                         }))
                       }
                       collapsible="icon"
@@ -236,12 +236,12 @@ export default () => {
               },
               content: {
                 search: false,
-                // render: (_, record) => (
-                //   <div>
-                //     <div style={{display: 'inline-block', width: '100px'}}>评分：{(record.rating).toFixed(1)}/10</div>
-                //     <div style={{display: 'inline-block'}}>基于{record.comment}条评价</div>
-                //   </div>
-                // ),
+                render: (_, record) => (
+                  <div>
+                    <div style={{display: 'inline-block', width: '100px'}}>评分：{(record.rating).toFixed(1)}/10</div>
+                    <div style={{display: 'inline-block'}}>基于{record.comment}条评价</div>
+                  </div>
+                ),
               },
               actions: {
                 

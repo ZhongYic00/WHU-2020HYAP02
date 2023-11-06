@@ -10,6 +10,7 @@ import {
   ProFormSwitch,
   ProFormText,
   ProFormTextArea,
+  ProFormList,
 } from '@ant-design/pro-components';
 import { Col, message, Row, Space, Select, Radio } from 'antd';
 import type { FormLayout } from 'antd/lib/form/Form';
@@ -83,7 +84,7 @@ const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id, queryFie
   const {initialState} = useModel("@@initialState");
   const schema = initialState?.clientSchema;
   const inputType=schema?.getType(`${schemaName}CreateInput`) as GraphQLInputObjectType
-  const fields=inputType.getFields()
+  const fields=inputType?.getFields()
   const type=schema?.getType(schemaName) as GraphQLObjectType
   // const fields=type.getFields()
   const unwrapList = (type:GraphQLType)=>{
@@ -166,44 +167,139 @@ nodesCreated
       const [name,nullable,isList,leafType]=item
       if(leafType instanceof GraphQLScalarType) {
         if(leafType.name == "Boolean") {
-          return (
-            <div>
-            <Row>
-              <Col span={2}>
-                <p>{name}: </p>
-              </Col>
-              <Col>
-                <Radio.Group name="genderGroup" defaultValue={1}>
-                  <Radio value={1}>男</Radio>
-                  <Radio value={2}>女</Radio>
-                </Radio.Group>              
-              </Col>
-            </Row>
-            </div>
-          )
+          if(isList) {
+            return (
+              <ProFormList
+                  name={name}
+                  label={name}
+                  creatorButtonProps={{
+                    position: 'bottom',
+                    creatorButtonText: '新增一行',
+                  }}
+                  min={1}
+              >
+                <div>
+                <Row>
+                  <Col span={2}>
+                    <p>{name}: </p>
+                  </Col>
+                  <Col>
+                    <Radio.Group name="genderGroup" defaultValue={1}>
+                      <Radio value={1}>男</Radio>
+                      <Radio value={2}>女</Radio>
+                    </Radio.Group>              
+                  </Col>
+                </Row>
+                </div>
+              </ProFormList>
+            )
+          }
+          else {
+            return (
+              <div>
+              <Row>
+                <Col span={2}>
+                  <p>{name}: </p>
+                </Col>
+                <Col>
+                  <Radio.Group name="genderGroup" defaultValue={1}>
+                    <Radio value={1}>男</Radio>
+                    <Radio value={2}>女</Radio>
+                  </Radio.Group>              
+                </Col>
+              </Row>
+              </div>
+            )
+          }
         }
         else if(leafType.name == "Date") {
-          return (
-            <ProFormDatePicker name={name} label={name} />
-          )
+          if(isList) {
+            return (
+              <ProFormList
+                  name={name}
+                  label={name}
+                  creatorButtonProps={{
+                    position: 'bottom',
+                    creatorButtonText: '新增一行',
+                  }}
+                  min={1}
+              >
+                <ProFormDatePicker name={name} label={name} />
+              </ProFormList>
+            )
+          }
+          else {
+            return (
+              <ProFormDatePicker name={name} label={name} />
+            )
+          }
         }
         else if(name!='_id' && name!='age'){
-          return (
-            <ProFormText
-              name={name}
-              label={name}
-              placeholder="请输入"
-            />
-          )
+          if(isList) {
+            return (
+              <ProFormList
+                  name={name}
+                  label={name}
+                  initialValue={[
+                    {
+                      [name]: '请输入',
+                    },
+                  ]}
+                  creatorButtonProps={{
+                    position: 'bottom',
+                    creatorButtonText: '新增一行',
+                  }}
+                  creatorRecord={{
+                    [name]: '请输入',
+                  }}
+                  min={1}
+              >
+                <ProFormText
+                  name={name}
+                  label={name}
+                  placeholder="请输入"
+                />
+              </ProFormList>
+            )
+          }
+          else {
+            return (
+              <ProFormText
+                name={name}
+                label={name}
+                placeholder="请输入"
+              />
+            )
+          }
         }
       }
       else if(leafType instanceof GraphQLEnumType) {
-        return (
-          <RenderEnumBox 
-            fieldName={name}
-            enumName={leafType?.name} 
-          />
-        )
+        if(isList) {
+          return (
+            <ProFormList
+                name={name}
+                label={name}
+                creatorButtonProps={{
+                  position: 'bottom',
+                  creatorButtonText: '新增一行',
+                }}
+                min={1}
+            >
+              <RenderEnumBox 
+                fieldName={name}
+                enumName={leafType?.name} 
+              />
+            </ProFormList>
+          )
+        }
+        else {
+          return (
+            <RenderEnumBox 
+              fieldName={name}
+              enumName={leafType?.name} 
+            />
+          )
+        }
       }
       else if(leafType instanceof GraphQLObjectType) {
         return <p>todo: render {leafType.name} chooser</p>
