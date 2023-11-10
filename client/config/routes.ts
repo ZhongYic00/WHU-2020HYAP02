@@ -97,6 +97,11 @@ export default [
     name:'maps浏览'
   },
   {
+    path:'/Browse',
+    component:'./Browse',
+    name:'评价浏览'
+  },
+  {
     path:'/view/:type/:id',
     component:'./Viewer',
   }
