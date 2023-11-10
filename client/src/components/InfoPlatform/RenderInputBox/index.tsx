@@ -16,7 +16,7 @@ import { Col, message, Row, Space, Select, Radio, Modal, Button, Form } from 'an
 import type { FormLayout } from 'antd/lib/form/Form';
 import { ReadOutlined } from '@ant-design/icons';
 import { Link, useModel } from '@umijs/max';
-import { GraphQLNonNull, GraphQLInputObjectType, GraphQLInputType, GraphQLScalarType, GraphQLList, GraphQLObjectType, GraphQLType, GraphQLEnumType } from 'graphql';
+import { GraphQLNonNull, GraphQLInputObjectType, GraphQLInputType, GraphQLScalarType, GraphQLList, GraphQLObjectType, GraphQLType, GraphQLEnumType, GraphQLInterfaceType } from 'graphql';
 import { KeepAlive } from '@umijs/max';
 import Filter from '../Filter';
 import { ObjectList } from '../ObjectList';
@@ -118,7 +118,7 @@ const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id, queryFie
   const unwrapList = (type:GraphQLType)=>{
     let list=false
     console.log('unwrap',type)
-    while(!(type instanceof GraphQLScalarType||type instanceof GraphQLObjectType||type instanceof GraphQLInputObjectType||type instanceof GraphQLEnumType)){
+    while(!(type instanceof GraphQLScalarType||type instanceof GraphQLObjectType||type instanceof GraphQLInputObjectType||type instanceof GraphQLEnumType||type instanceof GraphQLInterfaceType)){
       type=type.ofType
       list||=type instanceof GraphQLList
     }
@@ -331,9 +331,19 @@ nodesCreated
       }
       else if(leafType instanceof GraphQLObjectType) {
         const [open,setOpen]=useState(false)
-        return <Form.Item name={name} label={name}>
-          <ClassChooser typename={leafType.name}/>
-        </Form.Item>
+        const itemInput = <Form.Item name={name} label={name}>
+        <ClassChooser typename={leafType.name}/>
+      </Form.Item>
+      return <ProFormList name={name} label={name}
+        creatorButtonProps={{
+          position: 'bottom',
+          creatorButtonText: '新增一行',
+        }}
+        min={1}
+        max={isList?10:1}
+      >
+        {itemInput}
+      </ProFormList>
       }
       else{
         return <p>ERROR: type not considered:{JSON.stringify(item)}</p>

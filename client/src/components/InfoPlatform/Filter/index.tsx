@@ -104,7 +104,7 @@ const FilterNode: React.FC<{
             }
             const RenderInput = (type:string,ref:Ref<any>,field:GraphQLInputField)=>{
                 switch(type){
-                    case 'String': return <Input ref={ref}></Input>;
+                    case 'String': return <Input style={{width:'100%'}} ref={ref}></Input>;
                     case 'Int': return <InputNumber onChange={val=>ref.current=val}/>
                     case 'Boolean': return <Row>
                         <Radio.Group onChange={ev=>{console.log(ev);ref.current=ev.target.value}}>
@@ -123,7 +123,9 @@ const FilterNode: React.FC<{
                 }
             }
             return (
-                <Space.Compact>
+                <Space.Compact block
+                style={{width:'300px'}}
+                >
                     {node.label}
                     {RenderInput(node.type,node.ref,node.field)}
                     <Button

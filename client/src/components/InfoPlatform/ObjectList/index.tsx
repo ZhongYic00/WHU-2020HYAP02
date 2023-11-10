@@ -30,6 +30,13 @@ const abstractFragment = Object.fromEntries
         }
     }
     `,
+    Teacher: `#graphql
+    fragment $1 on $2{
+        name
+        title
+        gender
+    }
+    `
 }).map(([k,v])=>[k,v.replace('$1',`${k}Abstract`).replace('$2',k)])
 .map(([k,v])=>[k,gql(v)])
 )
@@ -37,6 +44,7 @@ const qInterface = {
     Class: 'classes',
     Article: 'articles',
     Duty: 'duties',
+    Teacher: 'teachers'
 }
 
 export const ObjectList:React.FC<{
