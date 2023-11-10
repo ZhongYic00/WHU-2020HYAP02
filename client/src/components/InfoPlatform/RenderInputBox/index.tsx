@@ -12,15 +12,43 @@ import {
   ProFormTextArea,
   ProFormList,
 } from '@ant-design/pro-components';
-import { Col, message, Row, Space, Select, Radio } from 'antd';
+import { Col, message, Row, Space, Select, Radio, Modal, Button, Form } from 'antd';
 import type { FormLayout } from 'antd/lib/form/Form';
 import { ReadOutlined } from '@ant-design/icons';
-import { useModel } from '@umijs/max';
-import { GraphQLNonNull, GraphQLInputObjectType, GraphQLInputType, GraphQLScalarType, GraphQLList, GraphQLObjectType, GraphQLType, GraphQLEnumType } from 'graphql';
+import { Link, useModel } from '@umijs/max';
+import { GraphQLNonNull, GraphQLInputObjectType, GraphQLInputType, GraphQLScalarType, GraphQLList, GraphQLObjectType, GraphQLType, GraphQLEnumType, GraphQLInterfaceType } from 'graphql';
+import { KeepAlive } from '@umijs/max';
+import Filter from '../Filter';
+import { ObjectList } from '../ObjectList';
 
 type RenderEnumBoxProps={
   enumName: string
   fieldName: string
+}
+
+const ClassChooser:React.FC<{
+  typename:string,
+  value?: string,
+  onChange?: (value: any) => void,
+}>=({typename,value,onChange})=>{
+  const [open,setOpen]=useState(false);
+  const [where,setWhere]=useState({});
+  const [id,setId]=useState<string>();
+  return <span>
+    {id && <p>{id}</p>}
+    <Button type="primary" onClick={()=>setOpen(true)}>Choose {typename}</Button>
+    <Modal
+      open={open}
+      onOk={()=>{
+        id && onChange?.({where:{node:{_id:id}}})
+        setOpen(false)
+      }}
+      onCancel={()=>setOpen(false)}
+    >
+      <Filter typename={typename} setWhere={setWhere} />
+      <ObjectList typename={typename} where={where} onChange={setId}/>
+    </Modal>
+  </span>
 }
 
 const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
@@ -90,7 +118,7 @@ const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id, queryFie
   const unwrapList = (type:GraphQLType)=>{
     let list=false
     console.log('unwrap',type)
-    while(!(type instanceof GraphQLScalarType||type instanceof GraphQLObjectType||type instanceof GraphQLInputObjectType||type instanceof GraphQLEnumType)){
+    while(!(type instanceof GraphQLScalarType||type instanceof GraphQLObjectType||type instanceof GraphQLInputObjectType||type instanceof GraphQLEnumType||type instanceof GraphQLInterfaceType)){
       type=type.ofType
       list||=type instanceof GraphQLList
     }
@@ -116,7 +144,7 @@ nodesCreated
   const [uploadObject]=useMutation(upload)
   
   return (
-  <div>
+  <KeepAlive>
     <ProForm
       layout = "horizontal"
       submitter={{
@@ -131,7 +159,7 @@ nodesCreated
         }
       }}
       onFinish={async (values) => {
-        console.log(values);
+        console.log('form values',values);
         uploadObject({
           variables:{
             input:[{
@@ -302,7 +330,20 @@ nodesCreated
         }
       }
       else if(leafType instanceof GraphQLObjectType) {
-        return <p>todo: render {leafType.name} chooser</p>
+        const [open,setOpen]=useState(false)
+        const itemInput = <Form.Item name={name} label={name}>
+        <ClassChooser typename={leafType.name}/>
+      </Form.Item>
+      return <ProFormList name={name} label={name}
+        creatorButtonProps={{
+          position: 'bottom',
+          creatorButtonText: '新增一行',
+        }}
+        min={1}
+        max={isList?10:1}
+      >
+        {itemInput}
+      </ProFormList>
       }
       else{
         return <p>ERROR: type not considered:{JSON.stringify(item)}</p>
@@ -311,7 +352,7 @@ nodesCreated
       })
     }
     </ProForm>
-  </div>
+  </KeepAlive>
   )
 }
 
