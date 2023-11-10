@@ -71,9 +71,9 @@ export default [
     icon: 'UserOutlined'
   },
   {
-    path:'/InfoUpload',
-    component: './InfoUpload',
-    name: '信息平台——上传',
+    path:'/create/:type/:id',
+    component: './InfoUpload',    
+    hideInMenu: true,
     icon: 'table'
   },
   {

@@ -19,7 +19,8 @@ import { Link, useModel } from '@umijs/max';
 import { GraphQLNonNull, GraphQLInputObjectType, GraphQLInputType, GraphQLScalarType, GraphQLList, GraphQLObjectType, GraphQLType, GraphQLEnumType, GraphQLInterfaceType } from 'graphql';
 import { KeepAlive } from '@umijs/max';
 import Filter from '../Filter';
-import { ObjectList } from '../ObjectList';
+import { ObjectList, firstUpperCase, pluralize, titleCase } from '../ObjectList';
+import { Pos, PosChooser, WHUCSCoords } from '../Maps/PosChooser';
 
 type RenderEnumBoxProps={
   enumName: string
@@ -47,6 +48,30 @@ const ClassChooser:React.FC<{
     >
       <Filter typename={typename} setWhere={setWhere} />
       <ObjectList typename={typename} where={where} onChange={setId}/>
+    </Modal>
+  </span>
+}
+
+const PointInput:React.FC<{
+  value?: Pos,
+  onChange?: (value: any) => void,
+}>=({value,onChange})=>{
+  const [open,setOpen]=useState(false);
+  const [pos,setPos]=useState<Pos>();
+  return <span>
+    {pos && <p>{JSON.stringify(pos)}</p>}
+    <Button type="primary" onClick={()=>setOpen(true)}>Select a pos on map</Button>
+    <Modal
+      open={open}
+      onCancel={()=>setOpen(false)}
+      okButtonProps={{hidden:true}}
+      style={{width:'80%'}}
+    >
+      <PosChooser setPos={(pos)=>{
+        setPos(pos)
+        onChange?.({longitude:pos.lng,latitude:pos.lat})
+        setOpen(false)
+      }} initialPos={WHUCSCoords} />
     </Modal>
   </span>
 }
@@ -104,11 +129,10 @@ const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
 
 export type RenderInputBoxProps={
   schemaName: string,
-  id: string,
-  queryFields:string
+  id?: string,
 }
 
-const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id, queryFields}) => {
+const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id,}) => {
   const {initialState} = useModel("@@initialState");
   const schema = initialState?.clientSchema;
   const inputType=schema?.getType(`${schemaName}CreateInput`) as GraphQLInputObjectType
@@ -330,7 +354,13 @@ nodesCreated
         }
       }
       else if(leafType instanceof GraphQLObjectType) {
-        const [open,setOpen]=useState(false)
+        
+        if(leafType.name=='Point') {
+          const itemInput = <Form.Item name={name} label={name}>
+            <PointInput />
+          </Form.Item>
+          return itemInput
+        }
         const itemInput = <Form.Item name={name} label={name}>
         <ClassChooser typename={leafType.name}/>
       </Form.Item>

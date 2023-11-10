@@ -103,3 +103,17 @@ export const ObjectList:React.FC<{
     }
     </>
 }
+
+export function firstUpperCase(str:string){
+    return str.replace(/( |^)[a-z]/g, (L) => L.toUpperCase())
+}
+export function titleCase(str:string){
+    return firstUpperCase(str.toLowerCase());
+}
+export function pluralize(word:string){
+    const special:{[key:string]:string}={
+        class:'classes',
+        duty:'duties',
+    }
+    return special[word.toLowerCase()] || word+'s'
+}
