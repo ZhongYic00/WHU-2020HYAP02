@@ -1,5 +1,5 @@
 import { gql, useMutation, useQuery } from '@apollo/client';
-import React, { Key, useState } from 'react';
+import React, { FC, Key, useState } from 'react';
 import {
   ProForm,
   ProFormDatePicker,
@@ -32,6 +32,7 @@ const ClassChooser:React.FC<{
   value?: string,
   onChange?: (value: any) => void,
 }>=({typename,value,onChange})=>{
+  console.log('ClassChooser',typename,value,onChange)
   const [open,setOpen]=useState(false);
   const [where,setWhere]=useState({});
   const [id,setId]=useState<string>();
@@ -41,7 +42,7 @@ const ClassChooser:React.FC<{
     <Modal
       open={open}
       onOk={()=>{
-        id && onChange?.({where:{node:{_id:id}}})
+        id && onChange?.(id)
         setOpen(false)
       }}
       onCancel={()=>setOpen(false)}
@@ -93,7 +94,7 @@ const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
   return (
     <ProFormSelect
       options={
-        enumValues?.map((item,index)=>(name))
+        enumValues?.map((item,index)=>(item.name))
       }
       fieldProps={{
         defaultValue:enumValues && enumValues[0].name
@@ -127,6 +128,18 @@ const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
   )
 }
 
+const BooleanInput:FC<{
+  value?: boolean,
+  onChange?: (value: any) => void,
+}> = ({value,onChange})=>{
+  return (
+        <Radio.Group name="genderGroup" defaultValue={value} onChange={v=>onChange?.(v)}>
+          <Radio value={true}>true</Radio>
+          <Radio value={false}>false</Radio>
+        </Radio.Group>
+  )
+}
+
 export type RenderInputBoxProps={
   schemaName: string,
   id?: string,
@@ -141,7 +154,7 @@ const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id,}) => {
   // const fields=type.getFields()
   const unwrapList = (type:GraphQLType)=>{
     let list=false
-    console.log('unwrap',type)
+    // console.log('unwrap',type)
     while(!(type instanceof GraphQLScalarType||type instanceof GraphQLObjectType||type instanceof GraphQLInputObjectType||type instanceof GraphQLEnumType||type instanceof GraphQLInterfaceType)){
       type=type.ofType
       list||=type instanceof GraphQLList
@@ -184,6 +197,27 @@ nodesCreated
       }}
       onFinish={async (values) => {
         console.log('form values',values);
+        const inputVal=
+        Object.fromEntries(
+        Object.entries(values)
+        .map(([k,v])=>{
+          const cfg=inputs.find(([name,])=>name==k)
+          if(!cfg)return null
+          const [name,nullable,isList,leafType]=cfg
+          const flattenList=(vals:any[])=>vals.map(({[k]:itemval})=>itemval)
+          if(leafType instanceof GraphQLInterfaceType || leafType instanceof GraphQLObjectType){
+            if(isList)return [k,{connect:{where:{node:{_id_IN:flattenList(v as any[])}}}}]
+            else return [k,{connect:{where:{node:{_id:v}}}}]
+          } else {
+            if(isList){
+              console.log(k,v,cfg)
+              return [k,flattenList(v as any[])]
+            }
+            return [k,v]
+          }
+        }) as [string,any][]
+        )
+        console.log('inputval',inputVal)
         uploadObject({
           variables:{
             input:[{
@@ -201,7 +235,7 @@ nodesCreated
                 create: {
                   node: {
                     [schemaName]: {
-                      ...values,
+                      ...inputVal,
                       // interests: []
                     }
                   }
@@ -219,6 +253,21 @@ nodesCreated
       const [name,nullable,isList,leafType]=item
       if(leafType instanceof GraphQLScalarType) {
         if(leafType.name == "Boolean") {
+          const item=(
+            <ProFormRadio.Group
+            name={name}
+            label={name}
+            options={[
+              {
+                label:'true',
+                value:true,
+              },{
+                label:'false',
+                value:false,
+              }
+            ]}
+            />
+          )
           if(isList) {
             return (
               <ProFormList
@@ -230,37 +279,13 @@ nodesCreated
                   }}
                   min={1}
               >
-                <div>
-                <Row>
-                  <Col span={2}>
-                    <p>{name}: </p>
-                  </Col>
-                  <Col>
-                    <Radio.Group name="genderGroup" defaultValue={1}>
-                      <Radio value={1}>男</Radio>
-                      <Radio value={2}>女</Radio>
-                    </Radio.Group>              
-                  </Col>
-                </Row>
-                </div>
+                {item}
               </ProFormList>
             )
           }
           else {
             return (
-              <div>
-              <Row>
-                <Col span={2}>
-                  <p>{name}: </p>
-                </Col>
-                <Col>
-                  <Radio.Group name="genderGroup" defaultValue={1}>
-                    <Radio value={1}>男</Radio>
-                    <Radio value={2}>女</Radio>
-                  </Radio.Group>              
-                </Col>
-              </Row>
-              </div>
+              item
             )
           }
         }
@@ -308,7 +333,7 @@ nodesCreated
               >
                 <ProFormText
                   name={name}
-                  label={name}
+                  // label={name}
                   placeholder="请输入"
                 />
               </ProFormList>
@@ -356,20 +381,20 @@ nodesCreated
       else if(leafType instanceof GraphQLObjectType) {
         
         if(leafType.name=='Point') {
-          const itemInput = <Form.Item name={name} label={name}>
+          const itemInput = <ProForm.Item name={name} label={name}>
             <PointInput />
-          </Form.Item>
+          </ProForm.Item>
           return itemInput
         }
-        const itemInput = <Form.Item name={name} label={name}>
+        const itemInput = <ProForm.Item name={name} label={isList?undefined:name}>
         <ClassChooser typename={leafType.name}/>
-      </Form.Item>
+      </ProForm.Item>
       return <ProFormList name={name} label={name}
         creatorButtonProps={{
           position: 'bottom',
           creatorButtonText: '新增一行',
         }}
-        min={1}
+        min={0}
         max={isList?10:1}
       >
         {itemInput}

@@ -6,20 +6,21 @@ import { PageContainer } from '@ant-design/pro-components';
 // import RenderInputBox from '../../components/InfoPlatform/index';
 import RenderInputBox from '../../components/InfoPlatform/RenderInputBox/index'
 import { Select } from 'antd';
-import { useMatch } from '@umijs/max';
+import { useParams, useSearchParams } from '@umijs/max';
 
 export default () => {
-    const match = useMatch('/create/:type/:id')
-    const type = match?.params?.type || 'Teacher'
+    const match = useParams()
+    const type = match['type'] || 'Teacher'
     // fork from entity
-    const entityId = match?.params?.id
+    const [params,setParams] = useSearchParams();
+    const entityId = params.get('id')
     return (
         <PageContainer>
             {/* <RenderInputBox schemaName="Teacher"></RenderInputBox> */}
             <RenderInputBox 
                 // schemaName='Article'
                 schemaName={type}
-                id={entityId}
+                id={entityId||undefined}
             ></RenderInputBox>
 
         </PageContainer>

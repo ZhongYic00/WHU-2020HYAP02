@@ -71,7 +71,7 @@ export default [
     icon: 'UserOutlined'
   },
   {
-    path:'/create/:type/:id',
+    path:'/create/:type',
     component: './InfoUpload',    
     hideInMenu: true,
     icon: 'table'
