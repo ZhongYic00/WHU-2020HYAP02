@@ -60,6 +60,10 @@ type Identity implements Entity {
     "system internal id"
     _id: ID @id
 }
+type citeRelation { 
+    post: Post!
+    attitude: Boolean
+}
 type Subject { 
     name: String! @unique
     category: String!
