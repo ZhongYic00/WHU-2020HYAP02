@@ -92,7 +92,21 @@ export default () => {
   </Form.Item>
 
   <Form.Item<FieldType>
-    label="职称"
+    label="性别"
+    rules={[{ required: true, message: 'Please input your password!' }]}
+  >
+    <Input />
+  </Form.Item>
+
+  <Form.Item<FieldType>
+    label="生日"
+    rules={[{ required: true, message: 'Please input your password!' }]}
+  >
+    <Input />
+  </Form.Item>
+
+  <Form.Item<FieldType>
+    label="年龄"
     rules={[{ required: true, message: 'Please input your password!' }]}
   >
     <Input />
@@ -106,21 +120,7 @@ export default () => {
   </Form.Item>
 
   <Form.Item<FieldType>
-    label="办公地点"
-    rules={[{ required: true, message: 'Please input your password!' }]}
-  >
-    <Input />
-  </Form.Item>
-
-  <Form.Item<FieldType>
-    label="联系电话"
-    rules={[{ required: true, message: 'Please input your password!' }]}
-  >
-    <Input />
-  </Form.Item>
-
-  <Form.Item<FieldType>
-    label="教授课程"
+    label="年级"
     rules={[{ required: true, message: 'Please input your password!' }]}
   >
     <Input />
