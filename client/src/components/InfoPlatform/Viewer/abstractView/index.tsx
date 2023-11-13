@@ -34,6 +34,16 @@ export const abstractFragment = Object.fromEntries
         gender
     }
     `,
+    Post: `#graphql
+    fragment $1 on $2{
+        user {
+            nickname
+        }
+        content {
+            __typename
+        }
+    }
+    `,
 }).map(([k,v])=>[k,v.replace('$1',`${k}Abstract`).replace('$2',k)])
 .map(([k,v])=>[k,gql(v)])
 )
@@ -41,7 +51,8 @@ export const qInterface:{[k:string]:string} = {
     Class: 'classes',
     Article: 'articles',
     Duty: 'duties',
-    Teacher: 'teachers'
+    Teacher: 'teachers',
+    Post: 'posts'
 }
 const elide=(s:string,mx:number)=>{
     return s.length>mx?s.slice(0,mx-1)+'...':s
@@ -50,6 +61,8 @@ export const abstractTitle = (type:string,data:any)=>{
     switch(type){
         case 'Article':
             return elide(data.content as string,30)
+        case 'Post':
+            return `${data?.content.__typename} by ${data?.user?.nickname}`
         default:
             return JSON.stringify(data)
     }
