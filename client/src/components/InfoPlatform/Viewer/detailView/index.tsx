@@ -3,34 +3,28 @@ import { gql, useQuery } from '@apollo/client';
 import { useMatch, useModel } from '@umijs/max';
 import { Card, Collapse, CollapseProps, List, Row, Tag, theme } from 'antd';
 import React, { Key, useState } from 'react';
-import Article from './components/article';
-import Post from './components/post';
+import Article from './article';
+import Post from './post';
 
 const date2str = (d:{year:string,month:string,day:string}) => `${d.year}-${d.month}-${d.day}`
 
-export const dispatchComponent = (type,id) => {
+export const dispatchComponent = (type:string,id:string) => {
     switch(type){
         case 'Article':
             return <Article id={id}></Article>
         case 'Post':
             return <Post id={id}></Post>
+        default:
+            return <p>unsupported {type} object {id} </p>
     }
 }
 export type ViewerProps={
-    id: string
+    id:string
 }
 
-const Viewer: React.FC = () => {
-  const { token } = theme.useToken();
-  const match = useMatch('/view/:type/:id')
-  const type = match?.params?.type
-  const entityId = match?.params?.id
-  console.log('_id',entityId,'type',type)
-  const [expandedRowKeys, setExpandedRowKeys] = useState<readonly Key[]>([]);
+const Viewer: React.FC<{type:string,id:string}> = ({type,id}) => {
   return (
-    <PageContainer>
-        {dispatchComponent(type,entityId)}
-    </PageContainer>
+        dispatchComponent(type,id)
   );
 };
 
