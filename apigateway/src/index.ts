@@ -98,14 +98,9 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
     type Identity implements Entity inherits Entity {
         nickname: String!
         realperson: PersonBase! @relationship(type:"Owner", direction:OUT)
+        votes:[Post!]! @relationship(type: "VoteOn", direction: OUT, properties: "Citation")
     }
 
-    type citeRelation {
-        post: Post!  
-        attitude: Boolean
-        "True: to complement; False: to correct"
-    }
-    
     type Subject {
         name: String! @unique
         category: String!
@@ -292,6 +287,22 @@ RETURN n""",
         content: Entity! @relationship(type: "PostContent", direction:OUT)
         cite:[Post!]! @relationship(type: "citeOther", direction: OUT, properties: "Citation")
         policy: VisibilityPolicy!
+        likes: Int! @cypher(
+            statement:"""
+match (this)<-[v:VoteOn]-(p:Identity)
+where v.Attitude=true
+return count(p) as likes
+            """,
+            columnName:"likes"
+        )
+        dislikes: Int! @cypher(
+            statement:"""
+match (this)<-[v:VoteOn]-(p:Identity)
+where v.Attitude=false
+return count(p) as dislikes
+            """,
+            columnName:"dislikes"
+        )
         _id: ID @id
     }
 `
