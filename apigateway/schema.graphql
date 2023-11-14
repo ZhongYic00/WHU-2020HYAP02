@@ -257,6 +257,12 @@ type POI implements Entity {
     "system internal id"
     _id: ID @id
 }
+type Review implements Entity { 
+    rating: Int!
+    content: String!
+    "system internal id"
+    _id: ID @id
+}
 enum VisibilityPolicy { 
     AllUsers
     Classmates

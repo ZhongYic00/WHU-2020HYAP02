@@ -255,6 +255,9 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         subPOIs: [POI!]! @relationship(type:"locatedIn",direction:IN)
         parentPOI: POI @relationship(type:"locatedIn",direction:OUT)
     }
+    type Review implements Entity inherits Article {
+        rating: Int!
+    }
 `) + 
 // graphql-s2s parsing cannot solve following statements
 `#graphql
