@@ -6,6 +6,7 @@ import {
   ProFormDateRangePicker,
   ProFormDigit,
   ProFormRadio,
+  ProFormRate,
   ProFormSelect,
   ProFormSwitch,
   ProFormText,
@@ -312,6 +313,24 @@ nodesCreated
             )
           }
         }
+        else if(leafType.name == "Int"){
+          const item=name=="rating" ? <ProFormRate name={name} label={name}/>
+          : (<ProFormDigit name={name} label={name}/>)
+          if(isList){
+            return <ProFormList
+                name={name}
+                label={name}
+                creatorButtonProps={{
+                  position: 'bottom',
+                  creatorButtonText: '新增一行',
+                }}
+                min={1}
+            >
+              {item}
+            </ProFormList>
+          }
+          return item
+        }
         else if(leafType.name == "Date") {
           if(isList) {
             return (
@@ -342,7 +361,7 @@ nodesCreated
                   label={name}
                   initialValue={[
                     {
-                      [name]: '请输入',
+                      [name]: '',
                     },
                   ]}
                   creatorButtonProps={{
@@ -363,6 +382,12 @@ nodesCreated
             )
           }
           else {
+            if(name=='content')
+              return <ProFormTextArea
+                name={name}
+                label={name}
+                placeholder="请输入"
+              />
             return (
               <ProFormText
                 name={name}
