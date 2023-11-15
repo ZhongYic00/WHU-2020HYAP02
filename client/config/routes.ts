@@ -92,7 +92,7 @@ export default [
     name:'信息平台浏览'
   },
   {
-    path:'/Browse',
+    path:'/Browse/:id',
     component:'./Browse',
     name:'评价浏览'
   },

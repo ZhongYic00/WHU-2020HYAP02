@@ -226,7 +226,7 @@ export default () => {
                             key: index,
                             label: <Link to={`/personInfo/${item.teacher[0]._id}`}>{item.teacher[0].name}</Link>,
                             children: <div>这是内容</div>,
-                            extra: <Link to={`/Browse`}>评价</Link>
+                            extra: <Link to={`/Browse/${record._id}`}>评价</Link>
                         }))
                       }
                       collapsible="icon"
