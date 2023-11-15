@@ -7,7 +7,7 @@ import { gql, useQuery } from '@apollo/client';
 const { Title, Text } = Typography;
 // todo: 查询语句可能有bug？
 const CourseQuery = gql`
-query CourseQuery($where: TeacherWhere) {
+query CourseQuery($where: CourseWhere) {
   courses(where: $where) {
     ... on DepartmentCourse {
       _id
