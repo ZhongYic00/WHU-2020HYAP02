@@ -25,6 +25,7 @@ import { KeepAlive } from '@umijs/max';
 import Filter from '../Filter';
 import { ObjectList, firstUpperCase, pluralize, titleCase } from '../ObjectList';
 import { Pos, PosChooser, WHUCSCoords } from '../Maps/PosChooser';
+import { qInterface } from '../Viewer/abstractView';
 
 type RenderEnumBoxProps={
   enumName: string
@@ -33,13 +34,13 @@ type RenderEnumBoxProps={
 
 const ClassChooser:React.FC<{
   typename:string,
-  value?: string,
+  value?:string,
   onChange?: (value: any) => void,
 }>=({typename,value,onChange})=>{
   console.log('ClassChooser',typename,value,onChange)
   const [open,setOpen]=useState(false);
   const [where,setWhere]=useState({});
-  const [id,setId]=useState<string>();
+  const [id,setId]=useState<string>(value);
   return <span>
     {id && <p>{id}</p>}
     <Button type="primary" onClick={()=>setOpen(true)}>Choose {typename}</Button>
@@ -183,6 +184,73 @@ nodesCreated
 }
   `
   const [uploadObject]=useMutation(upload)
+  const entry=qInterface[schemaName]
+  const {data} = useQuery(gql`
+  query($where:${schemaName}Where) {
+    ${entry}(where:$where) {
+      ${inputs.map(([name,_,__,leafType])=>{
+        if([GraphQLScalarType,GraphQLEnumType].some(t=>leafType instanceof t)||['Point'].includes(leafType.name))
+          return name
+        else if(['Period','Subject','MajorInRecord'].includes(leafType.name))
+          return ''
+        else
+          return `${name}{_id}`
+      }).join('\n')}
+    }
+  }
+  `,{variables:{where:{_id:id}}})
+  const initialObj=data?.[entry]?.[0]
+  console.log('forked from',id,`
+  query($where:${schemaName}Where) {
+      ${entry}(where:$where) {
+        ${inputs.map(([name,_,__,leafType])=>{
+          if([GraphQLScalarType,GraphQLEnumType].some(t=>leafType instanceof t)||leafType.name=='Point')
+          return name
+        else
+        return `${name}{_id}`
+    }).join('\n')}
+  }
+  }
+  `,initialObj)
+  const initialObjTransformed=initialObj && Object.fromEntries(
+  Object.entries(initialObj)
+        .filter(([k])=>inputs.find(([name,])=>name==k))
+        .map(([k,v])=>{
+          const cfg=inputs.find(([name,])=>name==k)
+          if(!cfg)return null
+          const [name,nullable,isList,leafType]=cfg
+          const unflattenList=(vals:any[])=>vals.map(itemval=>({[k]:itemval}))
+          if(leafType instanceof GraphQLInterfaceType || leafType instanceof GraphQLObjectType){
+            if(isList)return [k,unflattenList((v as any[]).map(vv=>vv._id))]
+            else return [k,v._id]
+          } else {
+            if(isList){
+              console.log(k,v,cfg)
+              return [k,unflattenList(v as any[])]
+            }
+            return [k,v]
+          }
+        }) as [string,any][]
+  )
+  console.log('initialVal',initialObjTransformed)
+
+  const {data:forkedPost} = useQuery(gql`
+query($where:PostWhere){
+  posts(where:$where){
+    _id
+  }
+}
+  `,{variables:{where:{contentConnection:{node:{
+    _on:{[schemaName]:{_id:id}}
+  }}}}})
+  const initialVal={
+    ...initialObjTransformed,
+    _cite:[{
+      objtype:schemaName,
+      obj:id,
+      attitude:true,
+    }]
+  }
   
   return (
   <KeepAlive>
@@ -198,6 +266,14 @@ nodesCreated
             </Row>
           );
         }
+      }}
+      initialValues={initialVal}
+      params={initialVal}
+      request={(params:any) => {
+        return Promise.resolve({
+          data: params,
+          success: true,
+        })
       }}
       onFinish={async (values) => {
         console.log('form values',values);
@@ -359,18 +435,13 @@ nodesCreated
               <ProFormList
                   name={name}
                   label={name}
-                  initialValue={[
-                    {
-                      [name]: '',
-                    },
-                  ]}
                   creatorButtonProps={{
                     position: 'bottom',
                     creatorButtonText: '新增一行',
                   }}
-                  creatorRecord={{
-                    [name]: '请输入',
-                  }}
+                  // creatorRecord={{
+                  //   [name]: '请输入',
+                  // }}
                   min={1}
               >
                 <ProFormText
