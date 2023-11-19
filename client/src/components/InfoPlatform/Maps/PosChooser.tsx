@@ -36,7 +36,7 @@ export const PosChooser:React.FC<{setPos:(pos:any)=>void,initialPos:Pos}> = ({se
   const handleConfirmClick = () => {
     // 点击确认按钮时，显示地图中心点的经纬度
     // alert(`地图中心点的经度：${centerCoords.longitude}, 纬度：${centerCoords.latitude}`);
-    setPos?.(centerCoords)
+    setPos?.({longtitude:centerCoords.lng,latitude:centerCoords.lat})
   };
 
   return (
