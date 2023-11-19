@@ -16,9 +16,9 @@ import {
   ProFormList,
   ProCard
 } from '@ant-design/pro-components';
-import { Col, message, Row, Space, Select, Radio, Modal, Button, Form } from 'antd';
+import { Col, message, Row, Space, Select, Radio, Modal, Button, Form, Input } from 'antd';
 import type { FormLayout } from 'antd/lib/form/Form';
-import { ReadOutlined } from '@ant-design/icons';
+import { PlusCircleFilled, PlusCircleOutlined, ReadOutlined } from '@ant-design/icons';
 import { Link, useModel } from '@umijs/max';
 import { GraphQLNonNull, GraphQLInputObjectType, GraphQLInputType, GraphQLScalarType, GraphQLList, GraphQLObjectType, GraphQLType, GraphQLEnumType, GraphQLInterfaceType } from 'graphql';
 import { KeepAlive } from '@umijs/max';
@@ -31,6 +31,14 @@ type RenderEnumBoxProps={
   enumName: string
   fieldName: string
 }
+const RawInput:React.FC<{
+  typename:string
+  value?:any,
+  onChange?: (value: any) => void,
+}>=({typename,value,onChange})=> (<span>
+  <p>Warning: type not considered:{typename}</p>
+  <Input value={JSON.stringify(value)} onChange={(e)=>onChange?.(e.target.value)}/>
+</span>)
 
 const ClassChooser:React.FC<{
   typename:string,
@@ -53,6 +61,13 @@ const ClassChooser:React.FC<{
       onCancel={()=>setOpen(false)}
     >
       <Filter typename={typename} setWhere={setWhere} />
+      <Link to={`/create/${typename}`} style={{
+        position: 'absolute',
+        right: '10%',
+        transform: 'translate(-50%, -50%)',
+      }}>
+        <Button type="dashed" icon={<PlusCircleOutlined/>}></Button>
+      </Link>
       <ObjectList typename={typename} where={where} onChange={setId}/>
     </Modal>
   </span>
@@ -185,7 +200,7 @@ nodesCreated
   `
   const [uploadObject]=useMutation(upload)
   const entry=qInterface[schemaName]
-  const {data} = useQuery(gql`
+  const initialValQuery=`#graphql
   query($where:${schemaName}Where) {
     ${entry}(where:$where) {
       ${inputs.map(([name,_,__,leafType])=>{
@@ -197,21 +212,10 @@ nodesCreated
           return `${name}{_id}`
       }).join('\n')}
     }
-  }
-  `,{variables:{where:{_id:id}}})
+  }`
+  const {data} = useQuery(gql(initialValQuery),{variables:{where:{_id:id}}})
   const initialObj=data?.[entry]?.[0]
-  console.log('forked from',id,`
-  query($where:${schemaName}Where) {
-      ${entry}(where:$where) {
-        ${inputs.map(([name,_,__,leafType])=>{
-          if([GraphQLScalarType,GraphQLEnumType].some(t=>leafType instanceof t)||leafType.name=='Point')
-          return name
-        else
-        return `${name}{_id}`
-    }).join('\n')}
-  }
-  }
-  `,initialObj)
+  console.log('forked from',id,initialValQuery,data,initialObj)
   const initialObjTransformed=initialObj && Object.fromEntries(
   Object.entries(initialObj)
         .filter(([k])=>inputs.find(([name,])=>name==k))
@@ -220,9 +224,9 @@ nodesCreated
           if(!cfg)return null
           const [name,nullable,isList,leafType]=cfg
           const unflattenList=(vals:any[])=>vals.map(itemval=>({[k]:itemval}))
-          if(leafType instanceof GraphQLInterfaceType || leafType instanceof GraphQLObjectType){
+          if(leafType instanceof GraphQLObjectType){
             if(isList)return [k,unflattenList((v as any[]).map(vv=>vv._id))]
-            else return [k,v._id]
+            else return [k,v?._id]
           } else {
             if(isList){
               console.log(k,v,cfg)
@@ -286,9 +290,12 @@ query($where:PostWhere){
           if(!cfg)return null
           const [name,nullable,isList,leafType]=cfg
           const flattenList=(vals:any[])=>vals.map(({[k]:itemval})=>itemval)
-          if(leafType instanceof GraphQLInterfaceType || leafType instanceof GraphQLObjectType){
-            if(isList)return [k,{connect:{where:{node:{_id_IN:flattenList(v as any[])}}}}]
-            else return [k,{connect:{where:{node:{_id:v}}}}]
+          if(leafType instanceof GraphQLObjectType){
+            return [k,{connect:{where:{node:{_id_IN:flattenList(v as any[])}}}}]
+          } else if(leafType instanceof GraphQLInterfaceType){
+            console.log('interface',k,v)
+            const parsedval=typeof v ==='string'?JSON.parse(v):v
+            return [k,{connect:{where:{node:{_id:v._id}}}}]
           } else {
             if(isList){
               console.log(k,v,cfg)
@@ -341,6 +348,11 @@ query($where:PostWhere){
               }
             }]
           }
+        }).then((v)=>{
+          message.info(`upload success! msg:${JSON.stringify(v)}`)
+          setInterval(()=>history.back(),1500)
+        }).catch((r)=>{
+          message.error(`upload failed! reason:${JSON.stringify(r)}`)
         })
       }}
       isKeyPressSubmit = {true}
@@ -505,9 +517,12 @@ query($where:PostWhere){
           </ProForm.Item>
           return itemInput
         }
-        const itemInput = <ProForm.Item name={name} label={isList?undefined:name}>
-        <ClassChooser typename={leafType.name}/>
-      </ProForm.Item>
+        const itemInput =
+        <ProForm.Item name={name} label={isList?undefined:name}>
+          {(['Period','MajorInRecord','AbortRecord'].includes(leafType.name))
+          ?<RawInput typename={leafType.name}/>
+          :<ClassChooser typename={leafType.name}/>}
+        </ProForm.Item>
       return <ProFormList name={name} label={name}
         creatorButtonProps={{
           position: 'bottom',
@@ -520,7 +535,11 @@ query($where:PostWhere){
       </ProFormList>
       }
       else{
-        return <p>ERROR: type not considered:{JSON.stringify(item)}</p>
+        return (
+          <ProForm.Item name={name} label={name}>
+            <RawInput typename={leafType.name}/>
+          </ProForm.Item>
+        )
       }
 
       })

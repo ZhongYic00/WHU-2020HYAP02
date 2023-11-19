@@ -44,6 +44,15 @@ export const abstractFragment = Object.fromEntries
         }
     }
     `,
+    POI: `#graphql
+    fragment $1 on $2{
+        name
+        loc {
+            longitude
+            latitude
+        }
+    }
+    `
 }).map(([k,v])=>[k,v.replace('$1',`${k}Abstract`).replace('$2',k)])
 .map(([k,v])=>[k,gql(v)])
 )
@@ -52,7 +61,8 @@ export const qInterface:{[k:string]:string} = {
     Article: 'articles',
     Duty: 'duties',
     Teacher: 'teachers',
-    Post: 'posts'
+    Post: 'posts',
+    POI: 'pois',
 }
 const elide=(s:string,mx:number)=>{
     return s.length>mx?s.slice(0,mx-1)+'...':s
