@@ -2,7 +2,7 @@ import { ProCard } from '@ant-design/pro-components';
 import { gql, useQuery } from '@apollo/client';
 import { Card, Collapse, CollapseProps, List, Tag, theme } from 'antd';
 import React, { Key, useState } from 'react';
-import { ViewerProps } from '..';
+import { ViewerProps } from '.';
 
 const TeacherQuery=gql`
 `

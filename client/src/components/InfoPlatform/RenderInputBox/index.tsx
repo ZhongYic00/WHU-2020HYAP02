@@ -6,11 +6,15 @@ import {
   ProFormDateRangePicker,
   ProFormDigit,
   ProFormRadio,
+  ProFormRate,
   ProFormSelect,
   ProFormSwitch,
   ProFormText,
   ProFormTextArea,
+  ProFormGroup,
+  ProFormDependency,
   ProFormList,
+  ProCard
 } from '@ant-design/pro-components';
 import { Col, message, Row, Space, Select, Radio, Modal, Button, Form } from 'antd';
 import type { FormLayout } from 'antd/lib/form/Form';
@@ -200,6 +204,7 @@ nodesCreated
         const inputVal=
         Object.fromEntries(
         Object.entries(values)
+        .filter(([k,v])=>!['_cite','_policy'].includes(k))
         .map(([k,v])=>{
           const cfg=inputs.find(([name,])=>name==k)
           if(!cfg)return null
@@ -221,7 +226,7 @@ nodesCreated
         uploadObject({
           variables:{
             input:[{
-              policy: 'AllUsers',
+              policy: values._policy,
               user: {
                 connect: {
                   where: {
@@ -240,6 +245,23 @@ nodesCreated
                     }
                   }
                 }
+              },
+              cite: {
+                connect:
+                  (values._cite as any[]).map(v=>({
+                    where:{
+                      node:{
+                        contentConnection:{
+                          node:{
+                            _id:v.obj
+                          }
+                        }
+                      }
+                    },
+                    edge:{
+                      Attitude:v.attitude
+                    }
+                  }))
               }
             }]
           }
@@ -247,7 +269,9 @@ nodesCreated
       }}
       isKeyPressSubmit = {true}
     >
-    {inputs && inputs.map((item,index)=>{
+    {inputs && 
+    // 根据schema自动渲染字段结构化填写控件
+    inputs.map((item,index)=>{
     // schemaFields && schemaFields.map((item, index) => {
       // const nowItem = {...item} as { -readonly [K in keyof typeof item]: typeof item[K]};
       const [name,nullable,isList,leafType]=item
@@ -289,6 +313,24 @@ nodesCreated
             )
           }
         }
+        else if(leafType.name == "Int"){
+          const item=name=="rating" ? <ProFormRate name={name} label={name}/>
+          : (<ProFormDigit name={name} label={name}/>)
+          if(isList){
+            return <ProFormList
+                name={name}
+                label={name}
+                creatorButtonProps={{
+                  position: 'bottom',
+                  creatorButtonText: '新增一行',
+                }}
+                min={1}
+            >
+              {item}
+            </ProFormList>
+          }
+          return item
+        }
         else if(leafType.name == "Date") {
           if(isList) {
             return (
@@ -319,7 +361,7 @@ nodesCreated
                   label={name}
                   initialValue={[
                     {
-                      [name]: '请输入',
+                      [name]: '',
                     },
                   ]}
                   creatorButtonProps={{
@@ -340,6 +382,12 @@ nodesCreated
             )
           }
           else {
+            if(name=='content')
+              return <ProFormTextArea
+                name={name}
+                label={name}
+                placeholder="请输入"
+              />
             return (
               <ProFormText
                 name={name}
@@ -406,6 +454,47 @@ nodesCreated
 
       })
     }
+    <ProCard
+      bordered
+      title=''
+    >
+      <ProFormGroup>
+        <ProFormSelect name='_policy' label='可见性'
+        options={schema && (schema.getType('VisibilityPolicy') as GraphQLEnumType).getValues().map(v=>v.name)}
+        initialValue={'AllUsers'}
+        />
+      </ProFormGroup>
+      <ProFormList name='_cite' label='引用'>
+        <ProFormGroup>
+          <ProFormSelect name='objtype' label='类型'
+          options={schema && schema.getPossibleTypes(schema.getType('Entity') as GraphQLInterfaceType).map(t=>t.name) }
+          />
+          <ProFormDependency name={['objtype']}>
+            {({objtype})=>(
+              <ProForm.Item
+              name='obj'
+              label='被引用对象'
+              >
+                <ClassChooser typename={objtype}/>
+              </ProForm.Item>
+            )}
+          </ProFormDependency>
+          <ProFormRadio.Group
+            name='attitude'
+            label='引用类型'
+            options={[
+              {
+                label:'正面引用',
+                value:true,
+              },{
+                label:'负面引用',
+                value:false,
+              }
+            ]}
+            />
+        </ProFormGroup>
+      </ProFormList>
+    </ProCard>
     </ProForm>
   </KeepAlive>
   )

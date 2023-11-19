@@ -2,50 +2,8 @@ import { DocumentNode, gql, useQuery } from "@apollo/client"
 import { List } from "antd"
 import { ProList } from '@ant-design/pro-components'
 import { useState } from "react"
+import { abstractFragment, qInterface } from "../Viewer/abstractView"
 
-
-const abstractFragment = Object.fromEntries
-(Object.entries({
-    Article: `#graphql
-    fragment $1 on $2{
-        content
-    }
-    `,
-    Class: `#graphql
-    fragment $1 on $2{
-        id
-        course {
-            name
-        }
-        teacher {
-            name
-        }
-    }
-    `,
-    Duty: `#graphql
-    fragment $1 on $2{
-        name
-        depart {
-            name
-        }
-    }
-    `,
-    Teacher: `#graphql
-    fragment $1 on $2{
-        name
-        title
-        gender
-    }
-    `
-}).map(([k,v])=>[k,v.replace('$1',`${k}Abstract`).replace('$2',k)])
-.map(([k,v])=>[k,gql(v)])
-)
-const qInterface = {
-    Class: 'classes',
-    Article: 'articles',
-    Duty: 'duties',
-    Teacher: 'teachers'
-}
 
 export const ObjectList:React.FC<{
     typename:string,
