@@ -151,9 +151,11 @@ type Teacher implements FacultyBase& PersonBase& Entity {
     "system internal id"
     _id: ID @id
 }
-type Duty { 
+type Duty implements Entity { 
     name: String!
     depart: Department! @relationship(type:"DutyAt", direction:OUT)
+    "system internal id"
+    _id: ID @id
 }
 type Department implements Entity { 
     name: String!
@@ -238,10 +240,10 @@ type PECourse implements Course& Entity {
 }
 type Class implements Entity { 
     "ID in whu-jwgl"
-    id: String! @unique
+    id: String!
     course: Course! @relationship(type:"ClassOf", direction:OUT)
     teacher: [Teacher!]! @relationship(type:"Teaches", direction:IN)
-    position: POI
+    position: POI @relationship(type:"HeldAt",direction:OUT)
     schedule: [Period!]! @relationship(type:"ClassPeriod",direction:OUT)
     "system internal id"
     _id: ID @id
@@ -290,6 +292,10 @@ enum HASSType {
 union StudyRecord = MajorInRecord | RepetitionRecord  
 union CourseKinds = DepartmentCourse | GeneralCourse | LiberalCourse | PECourse  
 union PersonUnion = Student | Faculty | Teacher  #graphql
+type AroundRes{
+    id:String!
+    loc:Point!
+}
 type Query{
         courses: [CourseKinds!] @cypher(
             statement:"""
@@ -304,6 +310,22 @@ MATCH (n)
 WHERE ANY(label IN labels(n) WHERE label IN ['Student', 'Teacher', 'Faculty'])
 RETURN n""",
             columnName:"n"
+        )
+        around(lng:Float,lat:Float): [AroundRes!] @cypher(
+            statement:"""
+match (p:POI)
+where point.distance(p.loc,point({longitude: $lng,latitude: $lat}))<1000
+with p
+match (p)--(e)
+where not any(lb in labels(e) where lb in ['Post'])
+return {id:p._id,loc:p.loc} as e
+union
+match (p:POI)
+where point.distance(p.loc,point({longitude: $lng,latitude: $lat}))<1000
+return {id:p._id,loc:p.loc} as e
+
+            """,
+            columnName:"e"
         )
     }
     "Generic post type, info platform UGC unit"

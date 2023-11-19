@@ -94,7 +94,6 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         Attitude:Boolean!
         createdAt: DateTime! @timestamp(operations: [CREATE])
     }
-
     type Identity implements Entity inherits Entity {
         nickname: String!
         realperson: PersonBase! @relationship(type:"Owner", direction:OUT)
@@ -176,7 +175,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         "research teams"
         teams: [ResearchTeam!]! @relationship(type:"MemberOf", direction:OUT)
     }
-    type Duty {
+    type Duty implements Entity inherits Entity{
         name: String!
         depart: Department! @relationship(type:"DutyAt", direction:OUT)
     }
@@ -241,10 +240,10 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
     union PersonUnion = Student | Faculty | Teacher
     type Class implements Entity inherits Entity {
         "ID in whu-jwgl"
-        id: String! @unique
+        id: String!
         course: Course! @relationship(type:"ClassOf", direction:OUT)
         teacher: [Teacher!]! @relationship(type:"Teaches", direction:IN)
-        position: POI
+        position: POI @relationship(type:"HeldAt",direction:OUT)
         schedule: [Period!]! @relationship(type:"ClassPeriod",direction:OUT)
     }
     # place of information
@@ -261,6 +260,10 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
 `) + 
 // graphql-s2s parsing cannot solve following statements
 `#graphql
+type AroundRes{
+    id:String!
+    loc:Point!
+}
 type Query{
         courses: [CourseKinds!] @cypher(
             statement:"""
@@ -275,6 +278,22 @@ MATCH (n)
 WHERE ANY(label IN labels(n) WHERE label IN ['Student', 'Teacher', 'Faculty'])
 RETURN n""",
             columnName:"n"
+        )
+        around(lng:Float,lat:Float): [AroundRes!] @cypher(
+            statement:"""
+match (p:POI)
+where point.distance(p.loc,point({longitude: $lng,latitude: $lat}))<1000
+with p
+match (p)--(e)
+where not any(lb in labels(e) where lb in ['Post'])
+return {id:p._id,loc:p.loc} as e
+union
+match (p:POI)
+where point.distance(p.loc,point({longitude: $lng,latitude: $lat}))<1000
+return {id:p._id,loc:p.loc} as e
+
+            """,
+            columnName:"e"
         )
     }
     "Generic post type, info platform UGC unit"
@@ -338,25 +357,6 @@ const resolvers = {
             if(record.isAbort) throw "MajorInRecord invalid!"
             return record.subject
         }
-    },
-    Query: { 
-        // validPosts: (_, __, context) => { 
-        //     const allPosts = [] //"get the data of all posts"
-        //     const validPosts = allPosts.filter(post => post.location && post.course); 
-        //     return validPosts; 
-        // }, 
-        // postsSortedByScoreAndTime: (_, __, context) => { 
-        //     const allPosts = [] //"get the data of all posts"
-        //     const validPosts = allPosts.filter(post => post.location && post.course); 
-        //     const sortedPosts = validPosts.sort((a, b) => { 
-        //         const scoreComparison = (a.likes - a.dislikes) - (b.likes - b.dislikes);  
-        //         if (scoreComparison === 0) { 
-        //             // return new Date(b.createdAt) - new Date(a.createdAt); 
-        //         } 
-        //         return scoreComparison; 
-        //     }); 
-        //     return sortedPosts; 
-        // } 
     }
 }
 
@@ -409,6 +409,45 @@ async function start(){
     });
 
     console.log(`🚀 Server ready at ${url}`);
+    [].map(id=>
+    server.executeOperation({query:`
+mutation($input: [PostCreateInput!]!) {
+  createPosts(input:$input) {
+    info {
+      nodesCreated
+      relationshipsCreated
+    }
+  }
+}
+    `,variables:{
+    "input": [
+        {
+            "content": {
+                "connect": {
+                    "where": {
+                        "node": {
+                            "_id_IN": [
+                                id
+                            ]
+                        }
+                    }
+                }
+            },
+            "user": {
+                "connect": {
+                    "where": {
+                        "node": {
+                            "nickname": "王老师"
+                        }
+                    },
+                    "overwrite": true
+                }
+            },
+            "policy": "AllUsers"
+        }
+    ]
+}})
+    )
 }
 start()
 .catch((r)=>{
