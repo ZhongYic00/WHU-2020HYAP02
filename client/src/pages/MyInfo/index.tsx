@@ -1,80 +1,134 @@
-import { PageContainer, ProList } from '@ant-design/pro-components';
-import { SettingOutlined, LikeOutlined, MessageOutlined, StarOutlined, StarFilled, DislikeOutlined } from '@ant-design/icons';
-import { Button, Progress, Space, Tag, Rate, List, Row, Col } from 'antd';
-import type { Key } from 'react';
-import { useState } from 'react';
-import {
-  ProCard,
-  ProForm,
-  ProFormList,
-  ProFormText,
-} from '@ant-design/pro-components';
-import React from 'react';
-import type { CollapseProps } from 'antd';
-import { Collapse } from 'antd';
-import { constant, forEach } from 'lodash';
-import Link from 'antd/es/typography/Link';
-import button from 'antd/es/button';
+import Filter from '@/components/InfoPlatform/Filter';
+import { PageContainer, ProList, ProCard } from '@ant-design/pro-components';
+import { gql, useQuery } from '@apollo/client';
+import { useModel } from '@umijs/max';
+import { Button, Card, Collapse, CollapseProps, List, Space, Switch, theme } from 'antd';
+import { forEach } from 'lodash';
+import React, { Key, useState } from 'react';
 
+const CoursesQuery=gql`
+query {
+  students {
+    name
+    classes {
+      course {
+        name
+      }
+    }
+  }
+}
+`
+const PeriodsQuery=gql`
+query {
+  students {
+    id
+    name
+    gender
+    birth
+    age
+    studyRecords {
+      ... on MajorInRecord {
+        major
+        isAbort
+        date
+        subject {
+          name
+          category
+          schoolingYear
+        }
+      }
+      ... on RepetitionRecord {
+        date
+      }
+    }
+    classes {
+      id
+      course {
+        name
+      }
+    }
+  }
+  periods {
+    weekday
+    start
+    end
+    weekstart
+    weekend
+    weekInterval
+  }
+}
+`
+const basicField=['id','name','gender','birth','age','college','grade']
+const chineseField=['编号','姓名','性别','生日','年龄','所属学院','年级']
 
+const date2str = (d:{year:string,month:string,day:string}) => `${d.year}-${d.month}-${d.day}`
 
-// 后端从数据库读取的数据
-// import { courseData } from './components/CourseData';
+//可被搜索状态回调函数
+function permission(){}
 
-// 用于前端编写时的测试数据
-const PersonData =[
-  {
-  id:'1',
-  name:'蔡朝晖',
-  title:'教授',
-  college:'计算机学院',
-  location:'计院C407',
-  phone:'123456',
-  course:'计算机基础'
-  
-},
-{
-  id:'2',
-  name:'胡新启',
-  title:'教授',
-  college:'数学与统计学院',
-  location:'数院C407',
-  phone:'123456',
-  course:'高等数学'
-  
-}];
-let data=[
-  {}
-];
-
-
-export default () => {
-
+const MyInfo: React.FC = () => {
+  const { token } = theme.useToken();
+  const { initialState } = useModel('@@initialState');
+  const { loading, error, data } = useQuery(PeriodsQuery);
   const [expandedRowKeys, setExpandedRowKeys] = useState<readonly Key[]>([]);
-
-
-
-  const genExtra = () => (
-    <SettingOutlined
-      onClick={(event) => {
-        // If you don't want click extra trigger collapse, you can prevent this:
-        event.stopPropagation();
-      }}
-    />
-  );
-
   return (
-  <><Row><img src='error' width={200} height={200}></img>
-  </Row>
-  <Row><p>姓名：{PersonData[0].name}</p></Row>
-  <Row><p>职称：{PersonData[0].title}</p></Row>
-  <Row><p>所属学院：{PersonData[0].college}</p></Row>
-  <Row><p>办公地点：{PersonData[0].location}</p></Row>
-  <Row><p>电话：{PersonData[0].phone}</p></Row>
-  <Row><p>教授课程</p></Row>
-  {/* <Link to={`/myinfo/update`}>修改</Link> */}
-  <Row><Button href='/myinfo/update'>修改</Button></Row>
-  </>
-  
-);
+    <PageContainer>
+        {data && data['students'] &&
+        [
+        data.students.map((stu)=>(
+          <ProCard
+            title={stu.name}
+            split='vertical'
+          >
+            <ProCard title='基本个人信息' colSpan="30%">
+            {basicField.map((field,index)=><p>{chineseField[index]} : {stu[field]}</p>)}
+            {<p>专业:{stu.studyRecords.major}</p>}
+            </ProCard>
+            
+            <ProCard>
+              <ProCard direction="column">
+                <ProCard title="学业变更记录" headerBordered>
+                  {<List
+                    dataSource={stu.studyRecords}
+                    renderItem={(item,index)=>(
+                      <List.Item>
+                        <List.Item.Meta
+                          title={item.subject?.name}
+                          description={ `${item.isAbort?"肄业":"修习"} on ${date2str(item.date)}`}
+                        />
+                      </List.Item>
+                    )}
+                  />}
+                </ProCard>
+                <ProCard title="所修课程" headerBordered>
+                  {<List
+                    dataSource={stu.classes}
+                    renderItem={(item,index)=>(
+                      <List.Item>
+                        <List.Item.Meta
+                          title={item.course.name}
+                        />
+                      </List.Item>
+                    )}
+                  />}
+                </ProCard>
+              </ProCard>
+            </ProCard>
+          </ProCard>
+        ))]
+        }
+        <Space direction="vertical">
+        <Button href='/Myinfo/Update'>修改</Button>
+        <Switch
+        checkedChildren="不可被搜索" unCheckedChildren="可被搜索" onChange={permission}></Switch>
+        </Space>
+        {/* {data && data['periods'] && data.periods.map((prd)=>(
+            <Card title={prd.weekday}>
+                <p>{JSON.stringify(prd)}</p>
+            </Card>
+        ))} */}
+    </PageContainer>
+  );
 };
+
+export default MyInfo;
