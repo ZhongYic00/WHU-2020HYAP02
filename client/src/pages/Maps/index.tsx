@@ -55,7 +55,7 @@ query($where: PostWhere) {
     if(!idsItem)throw "error!"
     return {
       lnglat:toAmapPoint(idsItem.loc),
-      extData:p.content
+      extData:p
     }
   })
   return <Col>

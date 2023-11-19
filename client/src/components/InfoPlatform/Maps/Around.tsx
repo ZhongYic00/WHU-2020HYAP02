@@ -1,9 +1,11 @@
 import { AntDesignOutlined, PlusOutlined } from '@ant-design/icons';
 import { Map, MarkerCluster } from '@pansy/react-amap';
-import { Avatar, message } from 'antd';
+import { Avatar, Button, Card, Popover, message } from 'antd';
 
 import React, { useState } from 'react';
 import { WHUCSCoords } from './PosChooser';
+import { AbstractViewer, abstractTitle, iconFor } from '../Viewer/abstractView';
+import { Link, history } from '@umijs/max';
 
 type MarkerData=AMap.MarkerCluster.DataOptions
 export const Around:React.FC<{
@@ -33,7 +35,27 @@ export const Around:React.FC<{
           render={
             (o:MarkerData)=>{
               // console.log('node data',o)
-              return <p>{JSON.stringify(o.extData)}</p>
+              if(typeof o.extData==='string')
+                return <p>{JSON.stringify(o.extData)}</p>
+              const content=o.extData.content
+              const type=content.__typename
+              const title=abstractTitle(type,content)
+              const icon=iconFor(type)
+              return <Popover content={
+                <div>
+                  <AbstractViewer type={type} data={content}/>
+                  <Button onClick={()=>{
+                    history.push(`/view/Post/${o.extData._id}`)
+                  }}>
+                    view details
+                  </Button>
+                </div>
+              }
+              title={title}>
+                <div style={{minWidth:'3vw'}}>
+                  {icon}{title}
+                </div>
+              </Popover>
             }
           }
           renderCluster={({ count, list = [] }) => {
