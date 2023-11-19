@@ -90,9 +90,9 @@ const PointInput:React.FC<{
     >
       <PosChooser setPos={(pos)=>{
         setPos(pos)
-        onChange?.({longitude:pos.lng,latitude:pos.lat})
+        onChange?.(pos)
         setOpen(false)
-      }} initialPos={WHUCSCoords} />
+      }} initialPos={value&&{lng:value.longitude,lat:value.latitude}||WHUCSCoords} />
     </Modal>
   </span>
 }
@@ -249,11 +249,11 @@ query($where:PostWhere){
   }}}}})
   const initialVal={
     ...initialObjTransformed,
-    _cite:[{
+    _cite:id?[{
       objtype:schemaName,
       obj:id,
       attitude:true,
-    }]
+    }]:[]
   }
   
   return (
@@ -291,7 +291,11 @@ query($where:PostWhere){
           const [name,nullable,isList,leafType]=cfg
           const flattenList=(vals:any[])=>vals.map(({[k]:itemval})=>itemval)
           if(leafType instanceof GraphQLObjectType){
-            return [k,{connect:{where:{node:{_id_IN:flattenList(v as any[])}}}}]
+            if(['Point'].includes(leafType.name)){
+              if(isList) throw "Point should not be list"
+              return [k,v[0][k]]
+            } else
+              return [k,{connect:{where:{node:{_id_IN:flattenList(v as any[])}}}}]
           } else if(leafType instanceof GraphQLInterfaceType){
             console.log('interface',k,v)
             const parsedval=typeof v ==='string'?JSON.parse(v):v
@@ -350,7 +354,7 @@ query($where:PostWhere){
           }
         }).then((v)=>{
           message.info(`upload success! msg:${JSON.stringify(v)}`)
-          setInterval(()=>history.back(),1500)
+          // setInterval(()=>history.back(),1500)
         }).catch((r)=>{
           message.error(`upload failed! reason:${JSON.stringify(r)}`)
         })
@@ -510,18 +514,21 @@ query($where:PostWhere){
         }
       }
       else if(leafType instanceof GraphQLObjectType) {
-        
-        if(leafType.name=='Point') {
-          const itemInput = <ProForm.Item name={name} label={name}>
-            <PointInput />
-          </ProForm.Item>
-          return itemInput
+        const dispatchInput=()=>{
+          switch(leafType.name){
+            case 'Point':
+              return <PointInput />
+            case 'Period':
+            case 'MajorInRecord':
+            case 'AbortRecord':
+              return <RawInput typename={leafType.name}/>
+            default:
+              return <ClassChooser typename={leafType.name}/>
+          }
         }
         const itemInput =
         <ProForm.Item name={name} label={isList?undefined:name}>
-          {(['Period','MajorInRecord','AbortRecord'].includes(leafType.name))
-          ?<RawInput typename={leafType.name}/>
-          :<ClassChooser typename={leafType.name}/>}
+          {dispatchInput()}
         </ProForm.Item>
       return <ProFormList name={name} label={name}
         creatorButtonProps={{
