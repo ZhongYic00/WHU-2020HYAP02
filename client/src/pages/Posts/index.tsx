@@ -75,7 +75,7 @@ const App: React.FC = () => {
         scrollableTarget="scrollableDiv"
       >
         <List
-          grid={{ gutter: 6, column: 5 }}
+          grid={{ gutter: 6, column: 4 }}
           dataSource={data.posts}
           renderItem={(item) => (
             <List.Item key={item._id}>
