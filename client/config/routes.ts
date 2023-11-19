@@ -46,12 +46,6 @@ export default [
     ],
   },
   {
-    name: 'list.table-list',
-    icon: 'table',
-    path: '/list',
-    component: './TableList',
-  },
-  {
     path: '/',
     redirect: '/welcome',
   },
@@ -63,5 +57,47 @@ export default [
   {
     path: '/demo',
     component: './Demo'
+  },
+  {
+    path: '/CoursesTable',
+    component: './CoursesTable',
+    name: '课程评价',
+    icon: 'table'
+  },
+  {
+    path: '/PersonInfo/:id',
+    component: './PersonInfo',
+    name: '人员信息',
+    icon: 'UserOutlined'
+  },
+  {
+    path:'/InfoUpload',
+    component: './InfoUpload',
+    name: '信息平台——上传',
+    icon: 'table'
+  },
+  {
+    path:'/MyInfo',
+    component:'./MyInfo',
+    name:'个人信息',
+    icon:'UserOutlined',
+  },
+  {
+    path:'/MyInfo/update',
+    component:'./MyInfo/Update'
+  },
+  {
+    path:'/Posts',
+    component:'./Posts',
+    name:'信息平台浏览'
+  },
+  {
+    path:'/Browse/:id',
+    component:'./Browse',
+    name:'评价浏览'
+  },
+  {
+    path:'/view/:type/:id',
+    component:'./Viewer',
   }
 ];
