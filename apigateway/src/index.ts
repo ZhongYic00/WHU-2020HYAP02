@@ -256,6 +256,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
     }
     type Review implements Entity inherits Article {
         rating: Int!
+        class_id: String!
     }
 `) + 
 // graphql-s2s parsing cannot solve following statements

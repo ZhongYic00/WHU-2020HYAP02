@@ -261,6 +261,7 @@ type POI implements Entity {
 }
 type Review implements Entity { 
     rating: Int!
+    class_id: String!
     content: String!
     "system internal id"
     _id: ID @id
