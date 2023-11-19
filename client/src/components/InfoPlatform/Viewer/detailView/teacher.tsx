@@ -7,6 +7,7 @@ import { ViewerProps } from '.';
 const TeacherQuery=gql`
 query TeacherQuery($where: TeacherWhere) {
   teachers(where: $where) {
+    _id
     name
     gender
     title
@@ -35,7 +36,7 @@ const Teacher: React.FC<ViewerProps> = ({id}) => {
   console.log('_id',id,'res',data)
   return data &&
   (<ProCard>
-    <p>{data.teachers[0].content}</p>
+    <p>{data.teachers[0].name}</p>
   </ProCard>)
 };
 
