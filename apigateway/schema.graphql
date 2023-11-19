@@ -57,12 +57,9 @@ type Article implements Entity {
 type Identity implements Entity { 
     nickname: String!
     realperson: PersonBase! @relationship(type:"Owner", direction:OUT)
+    votes: [Post!]! @relationship(type: "VoteOn", direction: OUT, properties: "Citation")
     "system internal id"
     _id: ID @id
-}
-type citeRelation { 
-    post: Post!
-    attitude: Boolean
 }
 type Subject { 
     name: String! @unique
@@ -154,9 +151,11 @@ type Teacher implements FacultyBase& PersonBase& Entity {
     "system internal id"
     _id: ID @id
 }
-type Duty { 
+type Duty implements Entity { 
     name: String!
     depart: Department! @relationship(type:"DutyAt", direction:OUT)
+    "system internal id"
+    _id: ID @id
 }
 type Department implements Entity { 
     name: String!
@@ -241,10 +240,10 @@ type PECourse implements Course& Entity {
 }
 type Class implements Entity { 
     "ID in whu-jwgl"
-    id: String! @unique
+    id: String!
     course: Course! @relationship(type:"ClassOf", direction:OUT)
     teacher: [Teacher!]! @relationship(type:"Teaches", direction:IN)
-    position: POI
+    position: POI @relationship(type:"HeldAt",direction:OUT)
     schedule: [Period!]! @relationship(type:"ClassPeriod",direction:OUT)
     "system internal id"
     _id: ID @id
@@ -257,6 +256,12 @@ type POI implements Entity {
     loc: Point
     subPOIs: [POI!]! @relationship(type:"locatedIn",direction:IN)
     parentPOI: POI @relationship(type:"locatedIn",direction:OUT)
+    "system internal id"
+    _id: ID @id
+}
+type Review implements Entity { 
+    rating: Int!
+    content: String!
     "system internal id"
     _id: ID @id
 }
@@ -287,6 +292,10 @@ enum HASSType {
 union StudyRecord = MajorInRecord | RepetitionRecord  
 union CourseKinds = DepartmentCourse | GeneralCourse | LiberalCourse | PECourse  
 union PersonUnion = Student | Faculty | Teacher  #graphql
+type AroundRes{
+    id:String!
+    loc:Point!
+}
 type Query{
         courses: [CourseKinds!] @cypher(
             statement:"""
@@ -302,6 +311,22 @@ WHERE ANY(label IN labels(n) WHERE label IN ['Student', 'Teacher', 'Faculty'])
 RETURN n""",
             columnName:"n"
         )
+        around(lng:Float,lat:Float): [AroundRes!] @cypher(
+            statement:"""
+match (p:POI)
+where point.distance(p.loc,point({longitude: $lng,latitude: $lat}))<1000
+with p
+match (p)--(e)
+where not any(lb in labels(e) where lb in ['Post'])
+return {id:p._id,loc:p.loc} as e
+union
+match (p:POI)
+where point.distance(p.loc,point({longitude: $lng,latitude: $lat}))<1000
+return {id:p._id,loc:p.loc} as e
+
+            """,
+            columnName:"e"
+        )
     }
     "Generic post type, info platform UGC unit"
     type Post implements Entity
@@ -316,5 +341,21 @@ RETURN n""",
         content: Entity! @relationship(type: "PostContent", direction:OUT)
         cite:[Post!]! @relationship(type: "citeOther", direction: OUT, properties: "Citation")
         policy: VisibilityPolicy!
+        likes: Int! @cypher(
+            statement:"""
+match (this)<-[v:VoteOn]-(p:Identity)
+where v.Attitude=true
+return count(p) as likes
+            """,
+            columnName:"likes"
+        )
+        dislikes: Int! @cypher(
+            statement:"""
+match (this)<-[v:VoteOn]-(p:Identity)
+where v.Attitude=false
+return count(p) as dislikes
+            """,
+            columnName:"dislikes"
+        )
         _id: ID @id
     }

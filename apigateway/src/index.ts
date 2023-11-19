@@ -94,18 +94,12 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         Attitude:Boolean!
         createdAt: DateTime! @timestamp(operations: [CREATE])
     }
-
     type Identity implements Entity inherits Entity {
         nickname: String!
         realperson: PersonBase! @relationship(type:"Owner", direction:OUT)
+        votes:[Post!]! @relationship(type: "VoteOn", direction: OUT, properties: "Citation")
     }
 
-    type citeRelation {
-        post: Post!  
-        attitude: Boolean
-        "True: to complement; False: to correct"
-    }
-    
     type Subject {
         name: String! @unique
         category: String!
@@ -181,7 +175,7 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         "research teams"
         teams: [ResearchTeam!]! @relationship(type:"MemberOf", direction:OUT)
     }
-    type Duty {
+    type Duty implements Entity inherits Entity{
         name: String!
         depart: Department! @relationship(type:"DutyAt", direction:OUT)
     }
@@ -246,10 +240,10 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
     union PersonUnion = Student | Faculty | Teacher
     type Class implements Entity inherits Entity {
         "ID in whu-jwgl"
-        id: String! @unique
+        id: String!
         course: Course! @relationship(type:"ClassOf", direction:OUT)
         teacher: [Teacher!]! @relationship(type:"Teaches", direction:IN)
-        position: POI
+        position: POI @relationship(type:"HeldAt",direction:OUT)
         schedule: [Period!]! @relationship(type:"ClassPeriod",direction:OUT)
     }
     # place of information
@@ -260,9 +254,16 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         subPOIs: [POI!]! @relationship(type:"locatedIn",direction:IN)
         parentPOI: POI @relationship(type:"locatedIn",direction:OUT)
     }
+    type Review implements Entity inherits Article {
+        rating: Int!
+    }
 `) + 
 // graphql-s2s parsing cannot solve following statements
 `#graphql
+type AroundRes{
+    id:String!
+    loc:Point!
+}
 type Query{
         courses: [CourseKinds!] @cypher(
             statement:"""
@@ -278,6 +279,22 @@ WHERE ANY(label IN labels(n) WHERE label IN ['Student', 'Teacher', 'Faculty'])
 RETURN n""",
             columnName:"n"
         )
+        around(lng:Float,lat:Float): [AroundRes!] @cypher(
+            statement:"""
+match (p:POI)
+where point.distance(p.loc,point({longitude: $lng,latitude: $lat}))<1000
+with p
+match (p)--(e)
+where not any(lb in labels(e) where lb in ['Post'])
+return {id:p._id,loc:p.loc} as e
+union
+match (p:POI)
+where point.distance(p.loc,point({longitude: $lng,latitude: $lat}))<1000
+return {id:p._id,loc:p.loc} as e
+
+            """,
+            columnName:"e"
+        )
     }
     "Generic post type, info platform UGC unit"
     type Post implements Entity
@@ -292,6 +309,22 @@ RETURN n""",
         content: Entity! @relationship(type: "PostContent", direction:OUT)
         cite:[Post!]! @relationship(type: "citeOther", direction: OUT, properties: "Citation")
         policy: VisibilityPolicy!
+        likes: Int! @cypher(
+            statement:"""
+match (this)<-[v:VoteOn]-(p:Identity)
+where v.Attitude=true
+return count(p) as likes
+            """,
+            columnName:"likes"
+        )
+        dislikes: Int! @cypher(
+            statement:"""
+match (this)<-[v:VoteOn]-(p:Identity)
+where v.Attitude=false
+return count(p) as dislikes
+            """,
+            columnName:"dislikes"
+        )
         _id: ID @id
     }
 `
@@ -324,25 +357,6 @@ const resolvers = {
             if(record.isAbort) throw "MajorInRecord invalid!"
             return record.subject
         }
-    },
-    Query: { 
-        // validPosts: (_, __, context) => { 
-        //     const allPosts = [] //"get the data of all posts"
-        //     const validPosts = allPosts.filter(post => post.location && post.course); 
-        //     return validPosts; 
-        // }, 
-        // postsSortedByScoreAndTime: (_, __, context) => { 
-        //     const allPosts = [] //"get the data of all posts"
-        //     const validPosts = allPosts.filter(post => post.location && post.course); 
-        //     const sortedPosts = validPosts.sort((a, b) => { 
-        //         const scoreComparison = (a.likes - a.dislikes) - (b.likes - b.dislikes);  
-        //         if (scoreComparison === 0) { 
-        //             // return new Date(b.createdAt) - new Date(a.createdAt); 
-        //         } 
-        //         return scoreComparison; 
-        //     }); 
-        //     return sortedPosts; 
-        // } 
     }
 }
 
@@ -395,6 +409,45 @@ async function start(){
     });
 
     console.log(`🚀 Server ready at ${url}`);
+    [].map(id=>
+    server.executeOperation({query:`
+mutation($input: [PostCreateInput!]!) {
+  createPosts(input:$input) {
+    info {
+      nodesCreated
+      relationshipsCreated
+    }
+  }
+}
+    `,variables:{
+    "input": [
+        {
+            "content": {
+                "connect": {
+                    "where": {
+                        "node": {
+                            "_id_IN": [
+                                id
+                            ]
+                        }
+                    }
+                }
+            },
+            "user": {
+                "connect": {
+                    "where": {
+                        "node": {
+                            "nickname": "王老师"
+                        }
+                    },
+                    "overwrite": true
+                }
+            },
+            "policy": "AllUsers"
+        }
+    ]
+}})
+    )
 }
 start()
 .catch((r)=>{
