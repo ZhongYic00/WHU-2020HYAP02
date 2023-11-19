@@ -3,6 +3,7 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import { Avatar, Card, Divider, List, Skeleton } from 'antd';
 import { useQuery,gql } from '@apollo/client';
 import { Link } from '@umijs/max';
+import { AbstractIdViewer } from '@/components/InfoPlatform/Viewer/abstractView';
 
 interface DataType {
   gender: string;
@@ -80,10 +81,11 @@ const App: React.FC = () => {
             <List.Item key={item._id}>
               <Card
                   cover={
-                    <img
-                      alt="example"
-                      src="https://gw.alipayobjects.com/zos/rmsportal/JiqGstEfoWAOHiTxclqi.png"
-                    />
+                    // <img
+                    //   alt="example"
+                    //   src="https://gw.alipayobjects.com/zos/rmsportal/JiqGstEfoWAOHiTxclqi.png"
+                    // />
+                    <AbstractIdViewer type={item.content.__typename} id={item.content._id}/>
                   }
               >
                 <Link to={`/view/${item.__typename}/${item._id}`}>{`${item.content.__typename} by ${item.user.nickname}`}</Link>
