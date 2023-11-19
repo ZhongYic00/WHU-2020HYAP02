@@ -5,6 +5,13 @@ import React, { Key, useState } from 'react';
 import { ViewerProps } from '.';
 
 const TeacherQuery=gql`
+query TeacherQuery($where: TeacherWhere) {
+  teachers(where: $where) {
+    name
+    gender
+    title
+  }
+}
 `
 const basicField=(Object.entries({
   name: {
