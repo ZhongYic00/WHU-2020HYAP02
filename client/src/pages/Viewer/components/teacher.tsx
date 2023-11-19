@@ -5,7 +5,6 @@ import React, { Key, useState } from 'react';
 import { ViewerProps } from '..';
 
 const TeacherQuery=gql`
-
 `
 const basicField=(Object.entries({
   name: {
