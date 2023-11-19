@@ -94,11 +94,18 @@ const typeDefs = graphqls2s.transpileSchema(`#graphql
         Attitude:Boolean!
         createdAt: DateTime! @timestamp(operations: [CREATE])
     }
+
     type Identity implements Entity inherits Entity {
         nickname: String!
         realperson: PersonBase! @relationship(type:"Owner", direction:OUT)
     }
 
+    type citeRelation {
+        post: Post!  
+        attitude: Boolean
+        "True: to complement; False: to correct"
+    }
+    
     type Subject {
         name: String! @unique
         category: String!
@@ -317,6 +324,25 @@ const resolvers = {
             if(record.isAbort) throw "MajorInRecord invalid!"
             return record.subject
         }
+    },
+    Query: { 
+        // validPosts: (_, __, context) => { 
+        //     const allPosts = [] //"get the data of all posts"
+        //     const validPosts = allPosts.filter(post => post.location && post.course); 
+        //     return validPosts; 
+        // }, 
+        // postsSortedByScoreAndTime: (_, __, context) => { 
+        //     const allPosts = [] //"get the data of all posts"
+        //     const validPosts = allPosts.filter(post => post.location && post.course); 
+        //     const sortedPosts = validPosts.sort((a, b) => { 
+        //         const scoreComparison = (a.likes - a.dislikes) - (b.likes - b.dislikes);  
+        //         if (scoreComparison === 0) { 
+        //             // return new Date(b.createdAt) - new Date(a.createdAt); 
+        //         } 
+        //         return scoreComparison; 
+        //     }); 
+        //     return sortedPosts; 
+        // } 
     }
 }
 

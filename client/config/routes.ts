@@ -104,5 +104,5 @@ export default [
   {
     path:'/view/:type/:id',
     component:'./Viewer',
-  }
+  },
 ];
