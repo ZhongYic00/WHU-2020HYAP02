@@ -71,9 +71,9 @@ export default [
     icon: 'UserOutlined'
   },
   {
-    path:'/InfoUpload',
-    component: './InfoUpload',
-    name: '信息平台——上传',
+    path:'/create/:type',
+    component: './InfoUpload',    
+    hideInMenu: true,
     icon: 'table'
   },
   {
@@ -92,6 +92,11 @@ export default [
     name:'信息平台浏览'
   },
   {
+    path:'/maps',
+    component:'./Maps',
+    name:'maps浏览'
+  },
+  {
     path:'/Browse/:id',
     component:'./Browse',
     name:'评价浏览'
@@ -99,5 +104,5 @@ export default [
   {
     path:'/view/:type/:id',
     component:'./Viewer',
-  }
+  },
 ];

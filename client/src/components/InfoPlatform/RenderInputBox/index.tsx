@@ -1,26 +1,84 @@
 import { gql, useMutation, useQuery } from '@apollo/client';
-import React, { Key, useState } from 'react';
+import React, { FC, Key, useState } from 'react';
 import {
   ProForm,
   ProFormDatePicker,
   ProFormDateRangePicker,
   ProFormDigit,
   ProFormRadio,
+  ProFormRate,
   ProFormSelect,
   ProFormSwitch,
   ProFormText,
   ProFormTextArea,
+  ProFormGroup,
+  ProFormDependency,
   ProFormList,
+  ProCard
 } from '@ant-design/pro-components';
-import { Col, message, Row, Space, Select, Radio } from 'antd';
+import { Col, message, Row, Space, Select, Radio, Modal, Button, Form } from 'antd';
 import type { FormLayout } from 'antd/lib/form/Form';
 import { ReadOutlined } from '@ant-design/icons';
-import { useModel } from '@umijs/max';
-import { GraphQLNonNull, GraphQLInputObjectType, GraphQLInputType, GraphQLScalarType, GraphQLList, GraphQLObjectType, GraphQLType, GraphQLEnumType } from 'graphql';
+import { Link, useModel } from '@umijs/max';
+import { GraphQLNonNull, GraphQLInputObjectType, GraphQLInputType, GraphQLScalarType, GraphQLList, GraphQLObjectType, GraphQLType, GraphQLEnumType, GraphQLInterfaceType } from 'graphql';
+import { KeepAlive } from '@umijs/max';
+import Filter from '../Filter';
+import { ObjectList, firstUpperCase, pluralize, titleCase } from '../ObjectList';
+import { Pos, PosChooser, WHUCSCoords } from '../Maps/PosChooser';
 
 type RenderEnumBoxProps={
   enumName: string
   fieldName: string
+}
+
+const ClassChooser:React.FC<{
+  typename:string,
+  value?: string,
+  onChange?: (value: any) => void,
+}>=({typename,value,onChange})=>{
+  console.log('ClassChooser',typename,value,onChange)
+  const [open,setOpen]=useState(false);
+  const [where,setWhere]=useState({});
+  const [id,setId]=useState<string>();
+  return <span>
+    {id && <p>{id}</p>}
+    <Button type="primary" onClick={()=>setOpen(true)}>Choose {typename}</Button>
+    <Modal
+      open={open}
+      onOk={()=>{
+        id && onChange?.(id)
+        setOpen(false)
+      }}
+      onCancel={()=>setOpen(false)}
+    >
+      <Filter typename={typename} setWhere={setWhere} />
+      <ObjectList typename={typename} where={where} onChange={setId}/>
+    </Modal>
+  </span>
+}
+
+const PointInput:React.FC<{
+  value?: Pos,
+  onChange?: (value: any) => void,
+}>=({value,onChange})=>{
+  const [open,setOpen]=useState(false);
+  const [pos,setPos]=useState<Pos>();
+  return <span>
+    {pos && <p>{JSON.stringify(pos)}</p>}
+    <Button type="primary" onClick={()=>setOpen(true)}>Select a pos on map</Button>
+    <Modal
+      open={open}
+      onCancel={()=>setOpen(false)}
+      okButtonProps={{hidden:true}}
+      style={{width:'80%'}}
+    >
+      <PosChooser setPos={(pos)=>{
+        setPos(pos)
+        onChange?.({longitude:pos.lng,latitude:pos.lat})
+        setOpen(false)
+      }} initialPos={WHUCSCoords} />
+    </Modal>
+  </span>
 }
 
 const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
@@ -40,7 +98,7 @@ const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
   return (
     <ProFormSelect
       options={
-        enumValues?.map((item,index)=>(name))
+        enumValues?.map((item,index)=>(item.name))
       }
       fieldProps={{
         defaultValue:enumValues && enumValues[0].name
@@ -74,13 +132,24 @@ const RenderEnumBox: React.FC<RenderEnumBoxProps> = ({fieldName, enumName}) => {
   )
 }
 
-export type RenderInputBoxProps={
-  schemaName: string,
-  id: string,
-  queryFields:string
+const BooleanInput:FC<{
+  value?: boolean,
+  onChange?: (value: any) => void,
+}> = ({value,onChange})=>{
+  return (
+        <Radio.Group name="genderGroup" defaultValue={value} onChange={v=>onChange?.(v)}>
+          <Radio value={true}>true</Radio>
+          <Radio value={false}>false</Radio>
+        </Radio.Group>
+  )
 }
 
-const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id, queryFields}) => {
+export type RenderInputBoxProps={
+  schemaName: string,
+  id?: string,
+}
+
+const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id,}) => {
   const {initialState} = useModel("@@initialState");
   const schema = initialState?.clientSchema;
   const inputType=schema?.getType(`${schemaName}CreateInput`) as GraphQLInputObjectType
@@ -89,8 +158,8 @@ const RenderInputBox: React.FC<RenderInputBoxProps> = ({schemaName, id, queryFie
   // const fields=type.getFields()
   const unwrapList = (type:GraphQLType)=>{
     let list=false
-    console.log('unwrap',type)
-    while(!(type instanceof GraphQLScalarType||type instanceof GraphQLObjectType||type instanceof GraphQLInputObjectType||type instanceof GraphQLEnumType)){
+    // console.log('unwrap',type)
+    while(!(type instanceof GraphQLScalarType||type instanceof GraphQLObjectType||type instanceof GraphQLInputObjectType||type instanceof GraphQLEnumType||type instanceof GraphQLInterfaceType)){
       type=type.ofType
       list||=type instanceof GraphQLList
     }
@@ -116,7 +185,7 @@ nodesCreated
   const [uploadObject]=useMutation(upload)
   
   return (
-  <div>
+  <KeepAlive>
     <ProForm
       layout = "horizontal"
       submitter={{
@@ -131,11 +200,33 @@ nodesCreated
         }
       }}
       onFinish={async (values) => {
-        console.log(values);
+        console.log('form values',values);
+        const inputVal=
+        Object.fromEntries(
+        Object.entries(values)
+        .filter(([k,v])=>!['_cite','_policy'].includes(k))
+        .map(([k,v])=>{
+          const cfg=inputs.find(([name,])=>name==k)
+          if(!cfg)return null
+          const [name,nullable,isList,leafType]=cfg
+          const flattenList=(vals:any[])=>vals.map(({[k]:itemval})=>itemval)
+          if(leafType instanceof GraphQLInterfaceType || leafType instanceof GraphQLObjectType){
+            if(isList)return [k,{connect:{where:{node:{_id_IN:flattenList(v as any[])}}}}]
+            else return [k,{connect:{where:{node:{_id:v}}}}]
+          } else {
+            if(isList){
+              console.log(k,v,cfg)
+              return [k,flattenList(v as any[])]
+            }
+            return [k,v]
+          }
+        }) as [string,any][]
+        )
+        console.log('inputval',inputVal)
         uploadObject({
           variables:{
             input:[{
-              policy: 'AllUsers',
+              policy: values._policy,
               user: {
                 connect: {
                   where: {
@@ -149,11 +240,28 @@ nodesCreated
                 create: {
                   node: {
                     [schemaName]: {
-                      ...values,
+                      ...inputVal,
                       // interests: []
                     }
                   }
                 }
+              },
+              cite: {
+                connect:
+                  (values._cite as any[]).map(v=>({
+                    where:{
+                      node:{
+                        contentConnection:{
+                          node:{
+                            _id:v.obj
+                          }
+                        }
+                      }
+                    },
+                    edge:{
+                      Attitude:v.attitude
+                    }
+                  }))
               }
             }]
           }
@@ -161,12 +269,29 @@ nodesCreated
       }}
       isKeyPressSubmit = {true}
     >
-    {inputs && inputs.map((item,index)=>{
+    {inputs && 
+    // 根据schema自动渲染字段结构化填写控件
+    inputs.map((item,index)=>{
     // schemaFields && schemaFields.map((item, index) => {
       // const nowItem = {...item} as { -readonly [K in keyof typeof item]: typeof item[K]};
       const [name,nullable,isList,leafType]=item
       if(leafType instanceof GraphQLScalarType) {
         if(leafType.name == "Boolean") {
+          const item=(
+            <ProFormRadio.Group
+            name={name}
+            label={name}
+            options={[
+              {
+                label:'true',
+                value:true,
+              },{
+                label:'false',
+                value:false,
+              }
+            ]}
+            />
+          )
           if(isList) {
             return (
               <ProFormList
@@ -178,39 +303,33 @@ nodesCreated
                   }}
                   min={1}
               >
-                <div>
-                <Row>
-                  <Col span={2}>
-                    <p>{name}: </p>
-                  </Col>
-                  <Col>
-                    <Radio.Group name="genderGroup" defaultValue={1}>
-                      <Radio value={1}>男</Radio>
-                      <Radio value={2}>女</Radio>
-                    </Radio.Group>              
-                  </Col>
-                </Row>
-                </div>
+                {item}
               </ProFormList>
             )
           }
           else {
             return (
-              <div>
-              <Row>
-                <Col span={2}>
-                  <p>{name}: </p>
-                </Col>
-                <Col>
-                  <Radio.Group name="genderGroup" defaultValue={1}>
-                    <Radio value={1}>男</Radio>
-                    <Radio value={2}>女</Radio>
-                  </Radio.Group>              
-                </Col>
-              </Row>
-              </div>
+              item
             )
           }
+        }
+        else if(leafType.name == "Int"){
+          const item=name=="rating" ? <ProFormRate name={name} label={name}/>
+          : (<ProFormDigit name={name} label={name}/>)
+          if(isList){
+            return <ProFormList
+                name={name}
+                label={name}
+                creatorButtonProps={{
+                  position: 'bottom',
+                  creatorButtonText: '新增一行',
+                }}
+                min={1}
+            >
+              {item}
+            </ProFormList>
+          }
+          return item
         }
         else if(leafType.name == "Date") {
           if(isList) {
@@ -242,7 +361,7 @@ nodesCreated
                   label={name}
                   initialValue={[
                     {
-                      [name]: '请输入',
+                      [name]: '',
                     },
                   ]}
                   creatorButtonProps={{
@@ -256,13 +375,19 @@ nodesCreated
               >
                 <ProFormText
                   name={name}
-                  label={name}
+                  // label={name}
                   placeholder="请输入"
                 />
               </ProFormList>
             )
           }
           else {
+            if(name=='content')
+              return <ProFormTextArea
+                name={name}
+                label={name}
+                placeholder="请输入"
+              />
             return (
               <ProFormText
                 name={name}
@@ -302,7 +427,26 @@ nodesCreated
         }
       }
       else if(leafType instanceof GraphQLObjectType) {
-        return <p>todo: render {leafType.name} chooser</p>
+        
+        if(leafType.name=='Point') {
+          const itemInput = <ProForm.Item name={name} label={name}>
+            <PointInput />
+          </ProForm.Item>
+          return itemInput
+        }
+        const itemInput = <ProForm.Item name={name} label={isList?undefined:name}>
+        <ClassChooser typename={leafType.name}/>
+      </ProForm.Item>
+      return <ProFormList name={name} label={name}
+        creatorButtonProps={{
+          position: 'bottom',
+          creatorButtonText: '新增一行',
+        }}
+        min={0}
+        max={isList?10:1}
+      >
+        {itemInput}
+      </ProFormList>
       }
       else{
         return <p>ERROR: type not considered:{JSON.stringify(item)}</p>
@@ -310,8 +454,49 @@ nodesCreated
 
       })
     }
+    <ProCard
+      bordered
+      title=''
+    >
+      <ProFormGroup>
+        <ProFormSelect name='_policy' label='可见性'
+        options={schema && (schema.getType('VisibilityPolicy') as GraphQLEnumType).getValues().map(v=>v.name)}
+        initialValue={'AllUsers'}
+        />
+      </ProFormGroup>
+      <ProFormList name='_cite' label='引用'>
+        <ProFormGroup>
+          <ProFormSelect name='objtype' label='类型'
+          options={schema && schema.getPossibleTypes(schema.getType('Entity') as GraphQLInterfaceType).map(t=>t.name) }
+          />
+          <ProFormDependency name={['objtype']}>
+            {({objtype})=>(
+              <ProForm.Item
+              name='obj'
+              label='被引用对象'
+              >
+                <ClassChooser typename={objtype}/>
+              </ProForm.Item>
+            )}
+          </ProFormDependency>
+          <ProFormRadio.Group
+            name='attitude'
+            label='引用类型'
+            options={[
+              {
+                label:'正面引用',
+                value:true,
+              },{
+                label:'负面引用',
+                value:false,
+              }
+            ]}
+            />
+        </ProFormGroup>
+      </ProFormList>
+    </ProCard>
     </ProForm>
-  </div>
+  </KeepAlive>
   )
 }
 
