@@ -1,15 +1,27 @@
 import { Button, Card, Typography, Rate, Modal, Form, Input } from 'antd';
 import { LikeOutlined, DislikeOutlined, LikeFilled, DislikeFilled } from '@ant-design/icons';
+import { useMatch, useModel } from '@umijs/max';
 import { useState } from 'react';
+import { gql, useQuery } from '@apollo/client';
 
 const { Title, Text } = Typography;
+// todo: 查询语句可能有bug？
+const CourseQuery = gql`
+
+`
 
 export default () => {
+  const match = useMatch('/Browse/:id')
+  const entityId = match?.params?.id
+  const { loading, error, data } = useQuery(CourseQuery,{  // todo: 目前data返回undefined
+    variables: {where: {_id: entityId}}
+  });
   // 虚拟的数据
   const courseInfo = {
-    title: '计算机基础',
-    description: '这是一门关于计算机基础知识的课程。',
+    title: entityId,  // todo: 改成课程名
+    description: '',
   };
+  console.log(data)
 
   const [reviews, setReviews] = useState([
     {
