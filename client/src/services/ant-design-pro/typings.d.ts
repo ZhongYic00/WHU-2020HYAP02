@@ -49,6 +49,11 @@ declare namespace API {
     progress?: number;
   };
 
+  type CoursesTableItem = {
+    id: number;
+    name: string;
+  }
+
   type RuleList = {
     data?: RuleListItem[];
     /** 列表的内容总数 */
