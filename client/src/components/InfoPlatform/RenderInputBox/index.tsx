@@ -213,7 +213,7 @@ nodesCreated
       }).join('\n')}
     }
   }`
-  const {data} = useQuery(gql(initialValQuery),{variables:{where:{_id:id}}})
+  const {data} = useQuery(gql(initialValQuery),{variables:{where:{_id:id||''}}})
   const initialObj=data?.[entry]?.[0]
   console.log('forked from',id,initialValQuery,data,initialObj)
   const initialObjTransformed=initialObj && Object.fromEntries(

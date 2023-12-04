@@ -1,5 +1,5 @@
 import { AntDesignOutlined, PlusOutlined } from '@ant-design/icons';
-import { Map, MarkerCluster } from '@pansy/react-amap';
+import { Map, MarkerCluster, Marker } from '@pansy/react-amap';
 import { Avatar, Button, Card, Popover, message } from 'antd';
 
 import React, { useState } from 'react';
@@ -9,8 +9,9 @@ import { Link, history } from '@umijs/max';
 
 type MarkerData=AMap.MarkerCluster.DataOptions
 export const Around:React.FC<{
+  curpos:any,
   objects:MarkerData[]
-}> = ({objects}) => {
+}> = ({objects,curpos=WHUCSCoords}) => {
   console.log('Around',objects)
 
   const centerCrossStyle = {
@@ -27,8 +28,9 @@ export const Around:React.FC<{
     <div style={{ height: 500, position: 'relative' }}>
       <Map
         zoom={18}
-        center={WHUCSCoords}
+        center={curpos}
       >
+        {curpos && <Marker position={curpos} />}
         <PlusOutlined style={centerCrossStyle} />
          <MarkerCluster
           data={objects}

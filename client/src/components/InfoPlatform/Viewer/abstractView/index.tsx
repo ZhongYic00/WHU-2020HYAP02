@@ -1,4 +1,4 @@
-import { EnvironmentOutlined, InfoOutlined } from "@ant-design/icons"
+import { EnvironmentOutlined, InfoOutlined, TeamOutlined } from "@ant-design/icons"
 import { gql, useQuery } from "@apollo/client"
 import { Card } from "antd"
 import Meta from "antd/es/card/Meta"
@@ -15,9 +15,11 @@ export const abstractFragment = Object.fromEntries
     fragment $1 on $2{
         id
         course {
+            _id
             name
         }
         teacher {
+            _id
             name
         }
     }
@@ -119,14 +121,17 @@ export const abstractTitle = (type:string,data:any)=>{
 export const iconFor=(type:string)=>{
     switch(type){
         case 'POI': return <EnvironmentOutlined/>
+        case 'Teacher': return <TeamOutlined/>
         default: return <InfoOutlined/>
     }
 }
 type AbstractViewerProps ={
     type:string,
     data?:any,
+    jumpOnclick?:boolean,
+    compact?:boolean,
 }
-export const AbstractViewer:React.FC<AbstractViewerProps>=({type,data})=>{
+export const AbstractViewer:React.FC<AbstractViewerProps>=({type,data,jumpOnclick=false,compact=false})=>{
     if(!data)return <p>null</p>
     switch(type){
         case 'Article':
@@ -149,7 +154,7 @@ export const AbstractViewer:React.FC<AbstractViewerProps>=({type,data})=>{
             </Card>
         case 'Teacher':
             return <Card cover={
-                <img
+                compact?null:<img
                   alt="example"
                   src="https://gw.alipayobjects.com/zos/rmsportal/JiqGstEfoWAOHiTxclqi.png"
                 />}>

@@ -3,8 +3,8 @@ import { PosChooser, WHUCSCoords, WHUCoords } from "@/components/InfoPlatform/Ma
 import { abstractFragment } from "@/components/InfoPlatform/Viewer/abstractView";
 import { gql, useQuery } from "@apollo/client";
 import { Col } from "antd";
+import { FC } from "react";
 
-export default ()=>{
 const toAmapPoint=(p)=>({lng:p.longitude,lat:p.latitude})
 const randomLnglat = () => [
   WHUCoords.lng + Math.random() * 0.01-0.005,
@@ -17,7 +17,10 @@ const randomMarker = (len = 10) => (
     extData: index+'s'
   }))
 );
-  const curpos=WHUCSCoords
+export const ShowAround:FC<{
+  curpos?:any,
+  addfake?:boolean,
+}>=({curpos=WHUCSCoords,addfake=true})=>{
   const {data:ids}=useQuery(gql`
 query($lng: Float, $lat: Float){
   around(lng: $lng,lat: $lat){
@@ -60,6 +63,9 @@ query($where: PostWhere) {
   })
   return <Col>
     {/* <PosChooser setPos={()=>null} initialPos={WHUCSCoords}/> */}
-    <Around objects={[...(data||[]),...randomMarker(100)]} />
+    <Around curpos={curpos} objects={[...(data||[]),...randomMarker(addfake?100:0)]} />
   </Col>
 };
+export default ()=>(
+  <ShowAround />
+)
