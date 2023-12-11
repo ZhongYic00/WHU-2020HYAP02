@@ -1,0 +1,6 @@
+- 上传的图片
+    - 都放在[images/](images)下
+    - 图的caption（题注）写法为`![caption text图式信息](~/Pictures/whu-logo.png)`
+- 用mermaid写的图
+    - 不要上传
+    - 写法参考设计文档：`{.mermaid caption="前端总体设计类图" background=transparent loc=imgs}`

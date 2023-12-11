@@ -4,4 +4,4 @@ echo $1
 basename=$1
 fname="${basename%.*}"
 echo $fname
-pandoc1 --verbose -t docx+native_numbering -F mermaid-filter -f markdown+table_captions --reference-doc $refdoc -o $fname.docx $fname.md
+pandoc1 --verbose -t docx+native_numbering -F mermaid-filter -f markdown+table_captions --reference-doc $refdoc -o gen/$fname.docx $fname.md
