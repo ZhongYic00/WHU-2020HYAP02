@@ -9,7 +9,7 @@ jobs:
         uses: actions/checkout@v4
       - name: build doc
         id: pandoc
-        uses: ZhongYic00/pandoc-customized-action@v1
+        uses: ZhongYic00/pandoc-customized-action@v1.1
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v3
         with:
