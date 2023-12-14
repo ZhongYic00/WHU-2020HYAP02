@@ -16,30 +16,39 @@ import {
   ProFormList,
   ProCard
 } from '@ant-design/pro-components';
-import { Col, message, Row, Space, Select, Radio, Modal, Button, Form } from 'antd';
+import { Col, message, Row, Space, Select, Radio, Modal, Button, Form, Input } from 'antd';
 import type { FormLayout } from 'antd/lib/form/Form';
-import { ReadOutlined } from '@ant-design/icons';
+import { PlusCircleFilled, PlusCircleOutlined, ReadOutlined } from '@ant-design/icons';
 import { Link, useModel } from '@umijs/max';
 import { GraphQLNonNull, GraphQLInputObjectType, GraphQLInputType, GraphQLScalarType, GraphQLList, GraphQLObjectType, GraphQLType, GraphQLEnumType, GraphQLInterfaceType } from 'graphql';
 import { KeepAlive } from '@umijs/max';
 import Filter from '../Filter';
 import { ObjectList, firstUpperCase, pluralize, titleCase } from '../ObjectList';
 import { Pos, PosChooser, WHUCSCoords } from '../Maps/PosChooser';
+import { qInterface } from '../Viewer/abstractView';
 
 type RenderEnumBoxProps={
   enumName: string
   fieldName: string
 }
+const RawInput:React.FC<{
+  typename:string
+  value?:any,
+  onChange?: (value: any) => void,
+}>=({typename,value,onChange})=> (<span>
+  <p>Warning: type not considered:{typename}</p>
+  <Input value={JSON.stringify(value)} onChange={(e)=>onChange?.(e.target.value)}/>
+</span>)
 
 const ClassChooser:React.FC<{
   typename:string,
-  value?: string,
+  value?:string,
   onChange?: (value: any) => void,
 }>=({typename,value,onChange})=>{
   console.log('ClassChooser',typename,value,onChange)
   const [open,setOpen]=useState(false);
   const [where,setWhere]=useState({});
-  const [id,setId]=useState<string>();
+  const [id,setId]=useState<string>(value);
   return <span>
     {id && <p>{id}</p>}
     <Button type="primary" onClick={()=>setOpen(true)}>Choose {typename}</Button>
@@ -52,6 +61,13 @@ const ClassChooser:React.FC<{
       onCancel={()=>setOpen(false)}
     >
       <Filter typename={typename} setWhere={setWhere} />
+      <Link to={`/create/${typename}`} style={{
+        position: 'absolute',
+        right: '10%',
+        transform: 'translate(-50%, -50%)',
+      }}>
+        <Button type="dashed" icon={<PlusCircleOutlined/>}></Button>
+      </Link>
       <ObjectList typename={typename} where={where} onChange={setId}/>
     </Modal>
   </span>
@@ -74,9 +90,9 @@ const PointInput:React.FC<{
     >
       <PosChooser setPos={(pos)=>{
         setPos(pos)
-        onChange?.({longitude:pos.lng,latitude:pos.lat})
+        onChange?.(pos)
         setOpen(false)
-      }} initialPos={WHUCSCoords} />
+      }} initialPos={value&&{lng:value.longitude,lat:value.latitude}||WHUCSCoords} />
     </Modal>
   </span>
 }
@@ -183,6 +199,62 @@ nodesCreated
 }
   `
   const [uploadObject]=useMutation(upload)
+  const entry=qInterface[schemaName]
+  const initialValQuery=`#graphql
+  query($where:${schemaName}Where) {
+    ${entry}(where:$where) {
+      ${inputs.map(([name,_,__,leafType])=>{
+        if([GraphQLScalarType,GraphQLEnumType].some(t=>leafType instanceof t)||['Point'].includes(leafType.name))
+          return name
+        else if(['Period','Subject','MajorInRecord'].includes(leafType.name))
+          return ''
+        else
+          return `${name}{_id}`
+      }).join('\n')}
+    }
+  }`
+  const {data} = useQuery(gql(initialValQuery),{variables:{where:{_id:id||''}}})
+  const initialObj=data?.[entry]?.[0]
+  console.log('forked from',id,initialValQuery,data,initialObj)
+  const initialObjTransformed=initialObj && Object.fromEntries(
+  Object.entries(initialObj)
+        .filter(([k])=>inputs.find(([name,])=>name==k))
+        .map(([k,v])=>{
+          const cfg=inputs.find(([name,])=>name==k)
+          if(!cfg)return null
+          const [name,nullable,isList,leafType]=cfg
+          const unflattenList=(vals:any[])=>vals.map(itemval=>({[k]:itemval}))
+          if(leafType instanceof GraphQLObjectType){
+            if(isList)return [k,unflattenList((v as any[]).map(vv=>vv._id))]
+            else return [k,v?._id]
+          } else {
+            if(isList){
+              console.log(k,v,cfg)
+              return [k,unflattenList(v as any[])]
+            }
+            return [k,v]
+          }
+        }) as [string,any][]
+  )
+  console.log('initialVal',initialObjTransformed)
+
+  const {data:forkedPost} = useQuery(gql`
+query($where:PostWhere){
+  posts(where:$where){
+    _id
+  }
+}
+  `,{variables:{where:{contentConnection:{node:{
+    _on:{[schemaName]:{_id:id}}
+  }}}}})
+  const initialVal={
+    ...initialObjTransformed,
+    _cite:id?[{
+      objtype:schemaName,
+      obj:id,
+      attitude:true,
+    }]:[]
+  }
   
   return (
   <KeepAlive>
@@ -199,6 +271,14 @@ nodesCreated
           );
         }
       }}
+      initialValues={initialVal}
+      params={initialVal}
+      request={(params:any) => {
+        return Promise.resolve({
+          data: params,
+          success: true,
+        })
+      }}
       onFinish={async (values) => {
         console.log('form values',values);
         const inputVal=
@@ -210,9 +290,16 @@ nodesCreated
           if(!cfg)return null
           const [name,nullable,isList,leafType]=cfg
           const flattenList=(vals:any[])=>vals.map(({[k]:itemval})=>itemval)
-          if(leafType instanceof GraphQLInterfaceType || leafType instanceof GraphQLObjectType){
-            if(isList)return [k,{connect:{where:{node:{_id_IN:flattenList(v as any[])}}}}]
-            else return [k,{connect:{where:{node:{_id:v}}}}]
+          if(leafType instanceof GraphQLObjectType){
+            if(['Point'].includes(leafType.name)){
+              if(isList) throw "Point should not be list"
+              return [k,v[0][k]]
+            } else
+              return [k,{connect:{where:{node:{_id_IN:flattenList(v as any[])}}}}]
+          } else if(leafType instanceof GraphQLInterfaceType){
+            console.log('interface',k,v)
+            const parsedval=typeof v ==='string'?JSON.parse(v):v
+            return [k,{connect:{where:{node:{_id:v._id}}}}]
           } else {
             if(isList){
               console.log(k,v,cfg)
@@ -265,6 +352,11 @@ nodesCreated
               }
             }]
           }
+        }).then((v)=>{
+          message.info(`upload success! msg:${JSON.stringify(v)}`)
+          // setInterval(()=>history.back(),1500)
+        }).catch((r)=>{
+          message.error(`upload failed! reason:${JSON.stringify(r)}`)
         })
       }}
       isKeyPressSubmit = {true}
@@ -359,18 +451,13 @@ nodesCreated
               <ProFormList
                   name={name}
                   label={name}
-                  initialValue={[
-                    {
-                      [name]: '',
-                    },
-                  ]}
                   creatorButtonProps={{
                     position: 'bottom',
                     creatorButtonText: '新增一行',
                   }}
-                  creatorRecord={{
-                    [name]: '请输入',
-                  }}
+                  // creatorRecord={{
+                  //   [name]: '请输入',
+                  // }}
                   min={1}
               >
                 <ProFormText
@@ -427,16 +514,22 @@ nodesCreated
         }
       }
       else if(leafType instanceof GraphQLObjectType) {
-        
-        if(leafType.name=='Point') {
-          const itemInput = <ProForm.Item name={name} label={name}>
-            <PointInput />
-          </ProForm.Item>
-          return itemInput
+        const dispatchInput=()=>{
+          switch(leafType.name){
+            case 'Point':
+              return <PointInput />
+            case 'Period':
+            case 'MajorInRecord':
+            case 'AbortRecord':
+              return <RawInput typename={leafType.name}/>
+            default:
+              return <ClassChooser typename={leafType.name}/>
+          }
         }
-        const itemInput = <ProForm.Item name={name} label={isList?undefined:name}>
-        <ClassChooser typename={leafType.name}/>
-      </ProForm.Item>
+        const itemInput =
+        <ProForm.Item name={name} label={isList?undefined:name}>
+          {dispatchInput()}
+        </ProForm.Item>
       return <ProFormList name={name} label={name}
         creatorButtonProps={{
           position: 'bottom',
@@ -449,7 +542,11 @@ nodesCreated
       </ProFormList>
       }
       else{
-        return <p>ERROR: type not considered:{JSON.stringify(item)}</p>
+        return (
+          <ProForm.Item name={name} label={name}>
+            <RawInput typename={leafType.name}/>
+          </ProForm.Item>
+        )
       }
 
       })

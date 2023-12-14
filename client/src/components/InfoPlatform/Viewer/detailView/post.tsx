@@ -1,10 +1,11 @@
 import { ProCard } from '@ant-design/pro-components';
 import { gql, useQuery } from '@apollo/client';
-import { Card, Collapse, CollapseProps, List, Row, Tag, theme } from 'antd';
+import { Button, Card, Collapse, CollapseProps, List, Row, Tag, theme } from 'antd';
 import React, { Key, useState } from 'react';
 import { ViewerProps, dispatchComponent } from '.';
-import { Link } from '@umijs/max';
+import { Link, history } from '@umijs/max';
 import { AbstractIdViewer, abstractTitle } from '../abstractView';
+import { PlusOutlined } from '@ant-design/icons';
 
 const PostQuery=gql`
 query($where: PostWhere) {
@@ -72,6 +73,7 @@ const Post: React.FC<ViewerProps> = ({id}) => {
                 </Tag>)
         })}
     </Row>
+    <Button icon={<PlusOutlined/>} onClick={()=>history.push(`/create/${item.content.__typename}/?id=${item.content._id}`)} >Fork</Button>
   </ProCard>)
 };
 
